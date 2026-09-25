@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>温馨家庭全周点餐系统 (澳洲极速版)</title>
+    <title>家庭全周大采购点菜端 (澳洲极速版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -13,145 +13,132 @@
     <header class="bg-white shadow-xs sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center space-x-2">
             <span class="text-2xl">🍲</span>
-            <h1 class="font-bold text-base text-amber-900">家庭全周预定点餐</h1>
+            <div>
+                <h1 class="font-bold text-base text-amber-900">家庭全周菜单预定</h1>
+                <p class="text-[10px] text-gray-400" id="currentLoginUserDisplay">当前点菜人: 请设置</p>
+            </div>
         </div>
         <div class="flex items-center space-x-2">
-            <button onclick="toggleHistoryModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium px-3 py-2 rounded-full border border-amber-200 transition flex items-center space-x-1">
-                <i class="fa-solid fa-clock-rotate-left"></i>
-                <span>已点清单</span>
+            <!-- 新增：查看我的预定单按钮 -->
+            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center space-x-1 shadow-xs">
+                <i class="fa-solid fa-receipt"></i>
+                <span>我的预定单</span>
             </button>
-            <div class="flex items-center bg-amber-100/60 px-3 py-1.5 rounded-full text-sm">
-                <i class="fa-solid fa-user text-amber-700 mr-1.5"></i>
-                <select id="userSelect" class="bg-transparent font-medium text-amber-900 outline-none">
-                    <option value="爸爸">爸爸</option>
-                    <option value="妈妈">妈妈</option>
-                    <option value="大宝">大宝</option>
-                    <option value="二宝">二宝</option>
-                    <option value="爷爷">爷爷</option>
-                    <option value="奶奶">奶奶</option>
-                </select>
-            </div>
+            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-2 rounded-xl transition flex items-center space-x-1 shadow-xs">
+                <i class="fa-solid fa-user-pen"></i>
+                <span id="switchUserBtnText">切换</span>
+            </button>
         </div>
     </header>
 
-    <!-- 星期选择栏 -->
-    <div class="bg-amber-900 text-white px-4 py-2 sticky top-[57px] z-30 shadow-md">
-        <div class="text-[11px] text-amber-200 mb-1 flex justify-between items-center">
-            <span>📅 请先选择你要为星期几安排饭菜：</span>
-            <span id="currentDayBadge" class="bg-amber-700 px-2 py-0.5 rounded text-white font-bold">周一</span>
+    <!-- 主体内容区 -->
+    <main class="max-w-md mx-auto p-4 space-y-5">
+        
+        <!-- 星期选择横幅 -->
+        <div class="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>选择你想预定哪一天的饭菜</h2>
+                <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2.5 py-0.5 rounded-full font-bold">周一</span>
+            </div>
+            <!-- 星期切换标签 -->
+            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1" id="dayTabs">
+                <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition">周一</button>
+                <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周二</button>
+                <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周三</button>
+                <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周四</button>
+                <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周五</button>
+                <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周六</button>
+                <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周日</button>
+            </div>
         </div>
-        <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1">
-            <button onclick="switchTargetDay('周一')" id="day-周一" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-white text-amber-900 whitespace-nowrap shadow transition">周一</button>
-            <button onclick="switchTargetDay('周二')" id="day-周二" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition">周二</button>
-            <button onclick="switchTargetDay('周三')" id="day-周三" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition">周三</button>
-            <button onclick="switchTargetDay('周四')" id="day-周四" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition">周四</button>
-            <button onclick="switchTargetDay('周五')" id="day-周五" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition">周五</button>
-            <button onclick="switchTargetDay('周六')" id="day-周六" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition">周六</button>
-            <button onclick="switchTargetDay('周日')" id="day-周日" class="day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition">周日</button>
+
+        <!-- 菜单分类导航 -->
+        <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1" id="categoryTabs">
+            <button onclick="filterCategory('全部')" id="cat-全部" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs">全部菜品</button>
+            <button onclick="filterCategory('热菜')" id="cat-热菜" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">热菜</button>
+            <button onclick="filterCategory('凉菜')" id="cat-凉菜" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">凉菜</button>
+            <button onclick="filterCategory('主食/汤品')" id="cat-主食/汤品" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">主食/汤品</button>
+            <button onclick="filterCategory('饮品/甜点')" id="cat-饮品/甜点" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">饮品/甜点</button>
         </div>
-    </div>
 
-    <!-- 菜品分类标签 -->
-    <nav class="bg-white border-b border-gray-100 px-4 py-2 sticky top-[108px] z-20 flex space-x-3 overflow-x-auto no-scrollbar shadow-xs">
-        <button onclick="filterCategory('全部')" id="cat-全部" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-amber-600 text-white whitespace-nowrap shadow-xs transition">全部</button>
-        <button onclick="filterCategory('热菜')" id="cat-热菜" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">热菜 🍳</button>
-        <button onclick="filterCategory('凉菜')" id="cat-凉菜" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">凉菜 🥗</button>
-        <button onclick="filterCategory('主食/汤品')" id="cat-主食/汤品" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">主食/汤 🍜</button>
-        <button onclick="filterCategory('饮品/甜点')" id="cat-饮品/甜点" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">饮品/甜点 🧋</button>
-    </nav>
-
-    <!-- 菜品网格 -->
-    <main class="max-w-md mx-auto p-4">
-        <div id="dishGrid" class="grid grid-cols-1 gap-4">
-            <div class="text-center py-16 text-gray-400">正在通过澳洲节点加载菜单...</div>
+        <!-- 菜品列表容器 -->
+        <div id="dishListContainer" class="grid grid-cols-1 gap-3.5">
+            <div class="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border">正在加载云端菜单库...</div>
         </div>
     </main>
 
-    <!-- 底部购物车栏 -->
-    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-xl p-4 max-w-md mx-auto flex items-center justify-between z-50 hidden">
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleCartModal()">
-            <div class="relative bg-amber-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md">
-                <i class="fa-solid fa-cart-shopping text-lg"></i>
-                <span id="cartBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
-            </div>
-            <div>
-                <p id="cartTotalPrice" class="text-lg font-bold text-amber-900">¥0</p>
-                <p id="cartTargetDayTip" class="text-xs text-amber-600 font-medium">为【周一】预定</p>
-            </div>
-        </div>
-        <button onclick="submitOrder()" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-2.5 rounded-full shadow-md transition">
-            提交预定
-        </button>
-    </div>
-
-    <!-- 购物车弹窗 -->
-    <div id="cartModal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center hidden">
-        <div class="bg-white w-full max-w-md rounded-t-2xl p-5 max-h-[75vh] flex flex-col">
-            <div class="flex justify-between items-center pb-3 border-b">
-                <h3 class="font-bold text-lg text-amber-900">已选清单 (<span id="modalDayTitle">周一</span>)</h3>
-                <button onclick="toggleCartModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-            </div>
-            <div id="cartItemsList" class="overflow-y-auto py-4 space-y-4 flex-1"></div>
-            <div class="pt-3 border-t space-y-3">
-                <div class="flex justify-between items-center font-bold">
-                    <span>合计：</span>
-                    <span id="cartModalTotal" class="text-xl text-amber-600">¥0</span>
+    <!-- 底部已选购物车悬浮栏 -->
+    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 z-30 max-w-md mx-auto hidden shadow-2xl rounded-t-3xl">
+        <div class="max-w-md mx-auto space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+                <div>
+                    <span class="font-bold text-sm text-amber-900">已选 <span id="cartCount" class="text-amber-600">0</span> 样菜品</span>
+                    <span class="text-xs text-gray-400 ml-2">(. <span id="cartDayLabel">周一</span>)</span>
                 </div>
-                <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-medium shadow-md transition">
-                    确认提交该日预定
-                </button>
+                <span class="font-extrabold text-amber-800 text-base">预估: ¥<span id="cartTotalPrice">0</span></span>
             </div>
+            <div id="cartItemsPreview" class="max-h-32 overflow-y-auto space-y-1.5 text-xs text-gray-600"></div>
+            <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span>确认提交给采购员</span>
+            </button>
         </div>
     </div>
 
-    <!-- 历史订单弹窗 -->
-    <div id="historyModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-5 max-h-[80vh] flex flex-col shadow-2xl">
-            <div class="flex justify-between items-center pb-3 border-b">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-clipboard-list mr-1"></i> 全周已点菜单与状态</h3>
-                <button onclick="toggleHistoryModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <!-- 🌟 新增页面/弹窗：查看和修改我的预定单 -->
+    <div id="myOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b">
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-receipt mr-1.5"></i>我的全部预定单记录</h3>
+                <button onclick="closeMyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div id="historyOrdersList" class="overflow-y-auto py-4 space-y-3 flex-1">
-                <div class="text-center py-6 text-gray-400 text-sm">正在同步全周订单...</div>
+            <p class="text-xs text-gray-400">在这里你可以查看自己点过的所有饭菜，并可随时删除或取消不需要的订单：</p>
+            <div id="myOrdersListContainer" class="space-y-3 pt-1">
+                <!-- 动态生成我的订单列表 -->
             </div>
-            <div class="pt-3 border-t text-center">
-                <button onclick="toggleHistoryModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium transition">关闭</button>
-            </div>
+            <button onclick="closeMyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-xs transition">关闭</button>
+        </div>
+    </div>
+
+    <!-- 第一次进入或切换用户的弹窗 -->
+    <div id="userModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4 text-center">
+            <div class="text-4xl">👋</div>
+            <h3 class="font-bold text-lg text-amber-900">欢迎点菜！请先告诉我们你是谁</h3>
+            <p class="text-xs text-gray-500">方便后台统计是谁点的菜，买菜时好核对~</p>
+            <input type="text" id="userNameInput" placeholder="例如：爸爸 / 妈妈 / 儿子 / 小美" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-center text-sm outline-none focus:border-amber-500 font-semibold">
+            <button onclick="saveUser()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-md transition text-sm">开始点菜</button>
         </div>
     </div>
 
     <script>
-        const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5'; 
+        const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
 
         let cloudData = { dishes: [], orders: [] };
-        let cart = [];
-        let currentCategory = '全部';
-        let targetDay = '周一';
+        let currentUser = '';
+        let selectedDay = '周一';
+        let selectedCategory = '全部';
+        let cart = {}; // { dishId: count }
 
-        const defaultDishes = [
-            { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜', ingredients: '五花肉 500g, 冰糖 30g, 生抽 30ml, 八角 2个' },
-            { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味', ingredients: '鲜活鲈鱼 1条, 葱姜 适量, 蒸鱼豉油 20ml' },
-            { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃', ingredients: '鲜黄瓜 2根, 大蒜 3瓣, 陈醋 15ml, 辣椒油 适量' }
-        ];
-
-        async function fetchCloudData() {
+        async function fetchAllData() {
             try {
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
                 if (json) {
                     cloudData = json;
-                    if (!cloudData.dishes || cloudData.dishes.length === 0) {
-                        cloudData.dishes = defaultDishes;
-                    }
+                    if (!cloudData.dishes) cloudData.dishes = [];
+                    if (!cloudData.orders) cloudData.orders = [];
                 }
             } catch (e) {
-                console.log('网络加载异常，使用默认菜单', e);
-                cloudData.dishes = defaultDishes;
+                console.log('同步云端数据失败', e);
             }
             renderDishes();
+            if(!document.getElementById('myOrdersModal').classList.contains('hidden')) {
+                renderMyOrdersList();
+            }
         }
 
-        async function saveCloudData() {
+        async function saveAllData() {
             try {
                 await fetch(API_URL, {
                     method: 'POST',
@@ -163,214 +150,237 @@
             }
         }
 
-        function switchTargetDay(day) {
-            targetDay = day;
-            document.getElementById('currentDayBadge').innerText = day;
+        window.onload = function() {
+            let savedUser = localStorage.getItem('family_order_user');
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('currentLoginUserDisplay').innerText = `当前点菜人: ${currentUser}`;
+                document.getElementById('switchUserBtnText').innerText = currentUser;
+                document.getElementById('userModal').classList.add('hidden');
+            }
+            fetchAllData();
+            setInterval(fetchAllData, 8000); // 8秒轮询同步
+        }
+
+        function openUserModal() {
+            document.getElementById('userNameInput').value = currentUser || '';
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        function saveUser() {
+            let name = document.getElementById('userNameInput').value.trim();
+            if (!name) {
+                alert('请输入名字或称呼！');
+                return;
+            }
+            currentUser = name;
+            localStorage.setItem('family_order_user', currentUser);
+            document.getElementById('currentLoginUserDisplay').innerText = `当前点菜人: ${currentUser}`;
+            document.getElementById('switchUserBtnText').innerText = currentUser;
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        function selectDay(day) {
+            selectedDay = day;
+            document.getElementById('selectedDayBadge').innerText = day;
             document.querySelectorAll('.day-btn').forEach(btn => {
                 if (btn.id === `day-${day}`) {
-                    btn.className = "day-btn px-3 py-1 rounded-lg text-xs font-bold bg-white text-amber-900 whitespace-nowrap shadow transition";
+                    btn.className = "day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition";
                 } else {
-                    btn.className = "day-btn px-3 py-1 rounded-lg text-xs font-bold bg-amber-800/80 text-white whitespace-nowrap transition";
+                    btn.className = "day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
                 }
             });
             renderDishes();
-            updateCartBar();
         }
 
-        function filterCategory(category) {
-            currentCategory = category;
+        function filterCategory(cat) {
+            selectedCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(btn => {
-                if (btn.id === `cat-${category}`) {
-                    btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-amber-600 text-white whitespace-nowrap shadow-xs transition";
+                if (btn.id === `cat-${cat}`) {
+                    btn.className = "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs";
                 } else {
-                    btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition";
+                    btn.className = "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
                 }
             });
             renderDishes();
         }
 
         function renderDishes() {
-            const dishes = cloudData.dishes || defaultDishes;
-            const grid = document.getElementById('dishGrid');
-            const filteredDishes = currentCategory === '全部' ? dishes : dishes.filter(d => d.category === currentCategory);
+            const container = document.getElementById('dishListContainer');
+            let dishes = cloudData.dishes || [];
 
-            if (filteredDishes.length === 0) {
-                grid.innerHTML = `<div class="text-center py-16 text-gray-400">该分类下暂无菜品~</div>`;
+            if (selectedCategory !== '全部') {
+                dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
+            }
+
+            if (dishes.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-sm bg-white rounded-2xl border">该分类暂无菜品，快去后台添加吧~</div>`;
                 return;
             }
 
-            grid.innerHTML = filteredDishes.map(dish => `
-                <div class="bg-white rounded-2xl shadow-xs overflow-hidden flex border border-gray-100 p-2.5 items-center">
-                    <img src="${dish.image}" alt="${dish.name}" class="w-24 h-24 object-cover rounded-xl">
-                    <div class="ml-3 flex-1 flex flex-col justify-between py-1">
-                        <div>
-                            <div class="flex justify-between items-start">
-                                <h3 class="font-bold text-base text-gray-800">${dish.name}</h3>
-                                <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">${dish.category || '热菜'}</span>
+            container.innerHTML = dishes.map(dish => {
+                let count = cart[dish.id] || 0;
+                return `
+                    <div class="bg-white rounded-2xl border border-gray-100 p-3.5 flex items-center justify-between shadow-xs">
+                        <div class="flex items-center space-x-3.5 flex-1">
+                            <img src="${dish.image}" class="w-16 h-16 object-cover rounded-xl shadow-xs">
+                            <div class="space-y-1 flex-1">
+                                <div class="flex items-center space-x-1.5">
+                                    <h3 class="font-bold text-sm text-gray-800">${dish.name}</h3>
+                                    <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-medium">${dish.category || '热菜'}</span>
+                                </div>
+                                <p class="text-[11px] text-gray-400 line-clamp-1">${dish.desc || '暂无简介'}</p>
+                                <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
                             </div>
-                            <p class="text-xs text-gray-400 line-clamp-1 mt-1">${dish.desc || '美味家常菜'}</p>
-                            ${dish.ingredients ? `<p class="text-[11px] text-amber-700/80 mt-0.5 line-clamp-1"><i class="fa-solid fa-basket-shopping mr-1"></i>配料: ${dish.ingredients}</p>` : ''}
                         </div>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-amber-600 font-bold text-base">¥${dish.price}</span>
-                            <div class="flex items-center space-x-2">
-                                <button onclick="updateCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-sm">-</button>
-                                <span class="text-sm font-semibold w-5 text-center">${getCartCount(dish.id)}</span>
-                                <button onclick="updateCart(${dish.id}, 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center text-sm shadow-xs">+</button>
-                            </div>
+                        <div class="flex items-center space-x-2">
+                            ${count > 0 ? `
+                                <button onclick="changeCart(${dish.id}, -1)" class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-sm hover:bg-gray-200 transition"><i class="fa-solid fa-minus text-xs"></i></button>
+                                <span class="font-bold text-sm w-5 text-center">${count}</span>
+                            ` : ''}
+                            <button onclick="changeCart(${dish.id}, 1)" class="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow-md hover:bg-amber-700 transition"><i class="fa-solid fa-plus text-xs"></i></button>
                         </div>
                     </div>
-                </div>
-            `).join('');
-        }
+                `;
+            }).join('');
 
-        function getCartCount(id) {
-            const item = cart.find(i => i.id === id);
-            return item ? item.count : 0;
-        }
-
-        function updateCart(id, delta) {
-            const dishes = cloudData.dishes || defaultDishes;
-            const dish = dishes.find(d => d.id === id);
-            let item = cart.find(i => i.id === id);
-            if (item) {
-                item.count += delta;
-                if (item.count <= 0) cart = cart.filter(i => i.id !== id);
-            } else if (delta > 0) {
-                cart.push({ ...dish, count: 1, note: '' });
-            }
-            renderDishes();
             updateCartBar();
+        }
+
+        function changeCart(dishId, delta) {
+            if (!cart[dishId]) cart[dishId] = 0;
+            cart[dishId] += delta;
+            if (cart[dishId] <= 0) delete cart[dishId];
+            renderDishes();
         }
 
         function updateCartBar() {
-            const cartBar = document.getElementById('cartBar');
-            const badge = document.getElementById('cartBadge');
-            const totalPriceEl = document.getElementById('cartTotalPrice');
-            const targetDayTip = document.getElementById('cartTargetDayTip');
-            const totalCount = cart.reduce((sum, i) => sum + i.count, 0);
-            const totalPrice = cart.reduce((sum, i) => sum + i.price * i.count, 0);
+            const bar = document.getElementById('cartBar');
+            let totalCount = 0;
+            let totalPrice = 0;
+            let previewHtml = '';
 
-            targetDayTip.innerText = `预定：${targetDay}`;
-            document.getElementById('modalDayTitle').innerText = targetDay;
+            let dishMap = {};
+            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
+
+            for (let id in cart) {
+                let count = cart[id];
+                let dish = dishMap[id];
+                if (dish) {
+                    totalCount += count;
+                    totalPrice += dish.price * count;
+                    previewHtml += `<div class="flex justify-between"><span>${dish.name} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
+                }
+            }
 
             if (totalCount > 0) {
-                cartBar.classList.remove('hidden');
-                badge.innerText = totalCount;
-                totalPriceEl.innerText = `¥${totalPrice}`;
+                bar.classList.remove('hidden');
+                document.getElementById('cartCount').innerText = totalCount;
+                document.getElementById('cartTotalPrice').innerText = totalPrice;
+                document.getElementById('cartDayLabel').innerText = selectedDay;
+                document.getElementById('cartItemsPreview').innerHTML = previewHtml;
             } else {
-                cartBar.classList.add('hidden');
+                bar.classList.add('hidden');
             }
-            renderCartModalList();
-        }
-
-        function renderCartModalList() {
-            const list = document.getElementById('cartItemsList');
-            const modalTotal = document.getElementById('cartModalTotal');
-            const totalPrice = cart.reduce((sum, i) => sum + i.price * i.count, 0);
-            modalTotal.innerText = `¥${totalPrice}`;
-
-            list.innerHTML = cart.map((item, index) => `
-                <div class="border-b pb-3 space-y-2">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h4 class="font-bold text-sm text-gray-800">${item.name}</h4>
-                            <span class="text-xs text-amber-600 font-semibold">¥${item.price} / 份</span>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                            <button onclick="updateCart(${item.id}, -1)" class="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs">-</button>
-                            <span class="text-sm font-semibold">${item.count}</span>
-                            <button onclick="updateCart(${item.id}, 1)" class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">+</button>
-                        </div>
-                    </div>
-                    <input type="text" placeholder="口味备注（如：少辣等）" value="${item.note || ''}" oninput="cart[${index}].note=this.value" class="w-full text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5 outline-none focus:border-amber-500">
-                </div>
-            `).join('');
-        }
-
-        function toggleCartModal() {
-            document.getElementById('cartModal').classList.toggle('hidden');
-        }
-
-        async function toggleHistoryModal() {
-            const modal = document.getElementById('historyModal');
-            if (modal.classList.contains('hidden')) {
-                await fetchCloudData();
-                loadHistoryOrders();
-                modal.classList.remove('hidden');
-            } else {
-                modal.classList.add('hidden');
-            }
-        }
-
-        function loadHistoryOrders() {
-            const container = document.getElementById('historyOrdersList');
-            const orders = cloudData.orders || [];
-
-            if (orders.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">还没有人预定全周的菜哦~</div>`;
-                return;
-            }
-
-            container.innerHTML = orders.map(order => `
-                <div class="bg-gray-50 border border-gray-100 p-3.5 rounded-xl space-y-2 text-sm">
-                    <div class="flex justify-between items-center border-b border-gray-200 pb-1.5">
-                        <div class="flex items-center space-x-2">
-                            <span class="bg-amber-600 text-white text-xs px-2 py-0.5 rounded font-bold">${order.targetDay || '周一'}</span>
-                            <span class="font-bold text-amber-900">${order.user}</span>
-                        </div>
-                        <span class="text-[11px] px-2 py-0.5 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}">${order.status}</span>
-                    </div>
-                    <div class="space-y-1">
-                        ${order.items.map(i => `
-                            <div class="flex justify-between text-xs text-gray-700">
-                                <div>
-                                    <span class="font-medium">${i.name}</span>
-                                    <span class="text-gray-400 ml-1">x${i.count}</span>${i.note ? `<span class="text-amber-600 ml-1 bg-amber-50 px-1 rounded">(${i.note})</span>` : ''}
-                                </div>
-                                <span class="font-semibold">¥${i.price * i.count}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div class="flex justify-between items-center pt-1.5 border-t border-gray-200 text-xs text-gray-500">
-                        <span>提交时间：${order.time}</span>
-                        <span class="font-bold text-amber-900">小计：¥${order.totalPrice}</span>
-                    </div>
-                </div>
-            `).join('');
         }
 
         async function submitOrder() {
-            if (cart.length === 0) {
-                alert('请先选择要点购的菜品哦！');
+            if (!currentUser) {
+                openUserModal();
                 return;
             }
+            let dishMap = {};
+            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
 
-            const user = document.getElementById('userSelect').value;
-            await fetchCloudData();
-            if (!cloudData.orders) cloudData.orders = [];
+            let items = [];
+            let totalPrice = 0;
+            for (let id in cart) {
+                let dish = dishMap[id];
+                if (dish) {
+                    items.push({ id: dish.id, name: dish.name, price: dish.price, count: cart[id] });
+                    totalPrice += dish.price * cart[id];
+                }
+            }
+
+            if (items.length === 0) return;
 
             const newOrder = {
                 id: Date.now(),
-                user: user,
-                targetDay: targetDay,
-                items: JSON.parse(JSON.stringify(cart)),
-                totalPrice: cart.reduce((sum, i) => sum + i.price * i.count, 0),
-                time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                status: '待采购'
+                user: currentUser,
+                targetDay: selectedDay,
+                items: items,
+                totalPrice: totalPrice,
+                status: '待采购',
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
-            cloudData.orders.unshift(newOrder);
-            await saveCloudData();
+            await fetchAllData();
+            if (!cloudData.orders) cloudData.orders = [];
+            cloudData.orders.push(newOrder);
 
-            alert(`成功为【${targetDay}】提交预定！大厨已同步收到。`);
-            cart = [];
-            document.getElementById('cartModal').classList.add('hidden');
+            await saveAllData();
+            cart = {};
             updateCartBar();
             renderDishes();
+            alert(`成功为【${selectedDay}】提交订单！`);
         }
 
-        fetchCloudData();
+        // 🌟 我的预定单管理功能
+        function openMyOrdersModal() {
+            if (!currentUser) {
+                openUserModal();
+                return;
+            }
+            document.getElementById('myOrdersModal').classList.remove('hidden');
+            renderMyOrdersList();
+        }
+
+        function closeMyOrdersModal() {
+            document.getElementById('myOrdersModal').classList.add('hidden');
+        }
+
+        function renderMyOrdersList() {
+            const container = document.getElementById('myOrdersListContainer');
+            const myOrders = (cloudData.orders || []).filter(o => o.user === currentUser);
+
+            if (myOrders.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">你还没有提交过任何预定单~</div>`;
+                return;
+            }
+
+            container.innerHTML = myOrders.map(order => `
+                <div class="bg-amber-50/50 border border-amber-200 p-3.5 rounded-2xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-amber-100 pb-1.5">
+                        <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1"></i>${order.targetDay || '周一'}预定</span>
+                        <div class="space-x-1">
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800'}">${order.status}</span>
+                            <button onclick="deleteMyOrder(${order.id})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="space-y-1 text-xs text-gray-700">
+                        ${order.items.map(i => `
+                            <div class="flex justify-between">
+                                <span>${i.name} x${i.count}</span>
+                                <span class="font-bold">¥${i.price * i.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[11px]">
+                        <span class="text-gray-400">时间: ${order.time}</span>
+                        <span class="font-bold text-amber-900">总计: ¥${order.totalPrice}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteMyOrder(orderId) {
+            if (!confirm('确定要取消并删除这个预定单吗？')) return;
+            await fetchAllData();
+            cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
+            await saveAllData();
+            renderMyOrdersList();
+            renderDishes();
+        }
     </script>
 </body>
 </html>
