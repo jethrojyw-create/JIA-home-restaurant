@@ -19,7 +19,7 @@
             <span class="text-xl">🛒</span>
             <div>
                 <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭采购管理后台</h1>
-                <p class="text-[10px] text-gray-400">智能库存抵扣与采购汇总</p>
+                <p class="text-[10px] text-gray-400">智能库存抵扣与搜索</p>
             </div>
         </div>
         <div class="flex items-center space-x-1.5">
@@ -57,14 +57,13 @@
             <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 rounded-lg text-gray-600 transition">菜品库</button>
         </div>
 
-        <!-- 面板 1：周末采购原材料清单（含库存抵扣） -->
+        <!-- 面板 1：周末采购原材料清单 -->
         <div id="panel-summary" class="space-y-3">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
                     <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>扣除库存后的实际需购清单</span>
-                    <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">已自动联动库存</span>
+                    <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">自动扣库存</span>
                 </h3>
-                <p class="text-[11px] text-gray-400">系统已自动用现有库存抵扣，仅显示库存不足需要购买的差额：</p>
                 <div id="summaryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
                 </div>
@@ -74,11 +73,15 @@
         <!-- 面板 2：库存管理 -->
         <div id="panel-inventory" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
-                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
-                    <span><i class="fa-solid fa-warehouse mr-1 text-amber-600"></i>现有原材料库存设置</span>
-                    <button onclick="openAddInventoryModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>手动添加库存</button>
-                </h3>
-                <p class="text-[11px] text-gray-400">在此维护家中现有的原材料数量，点菜后系统会自动扣减库存：</p>
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-warehouse mr-1 text-amber-600"></i>现有原材料库存</h3>
+                    <button onclick="openAddInventoryModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>添加库存</button>
+                </div>
+                <!-- 搜索框 -->
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search text-xs"></i></span>
+                    <input type="text" id="inventorySearchInput" oninput="renderInventory()" placeholder="输入原材料名称搜索库存..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-xs outline-none">
+                </div>
                 <div id="inventoryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">暂无库存记录...</div>
                 </div>
@@ -101,10 +104,15 @@
         <!-- 面板 4：菜品库管理 -->
         <div id="panel-dishes" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
-                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
-                    <span><i class="fa-solid fa-utensils mr-1 text-amber-600"></i>可选菜单库与原材料设置</span>
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-utensils mr-1 text-amber-600"></i>可选菜单库与原材料</h3>
                     <button onclick="openAddDishModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>添加新菜</button>
-                </h3>
+                </div>
+                <!-- 搜索框 -->
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search text-xs"></i></span>
+                    <input type="text" id="dishSearchInput" oninput="renderDishesAdmin()" placeholder="输入菜品名称或配料关键字搜索..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-xs outline-none">
+                </div>
                 <div id="dishesListContainer" class="grid grid-cols-1 gap-2.5 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">加载菜品库中...</div>
                 </div>
@@ -121,9 +129,16 @@
             </div>
             <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">保存退出</button>
         </div>
-        <div class="bg-emerald-50 px-4 py-2 text-[11px] text-emerald-800 border-b flex justify-between items-center">
-            <span>买一样勾选一样，已扣除家里库存！</span>
-            <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
+        <div class="bg-emerald-50 px-4 py-2 border-b space-y-2">
+            <div class="flex justify-between items-center text-[11px] text-emerald-800">
+                <span>买一样勾选一样，已扣除库存！</span>
+                <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
+            </div>
+            <!-- 超市搜索框 -->
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search text-xs"></i></span>
+                <input type="text" id="supermarketSearchInput" oninput="renderSupermarketList()" placeholder="在采购清单中快速搜索..." class="w-full bg-white border border-emerald-200 rounded-xl pl-8 pr-3 py-1.5 text-xs outline-none">
+            </div>
         </div>
         <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full"></div>
         <div class="p-3 bg-white border-t max-w-lg mx-auto w-full">
@@ -161,7 +176,7 @@
         </div>
     </div>
 
-    <!-- 临时加购 / 修改弹窗 -->
+    <!-- 临时加购弹窗 -->
     <div id="manualItemModal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
             <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">修改采购项目</h3>
@@ -229,7 +244,7 @@
                 </div>
                 <div>
                     <label class="text-emerald-800 font-bold block mb-1">可选配菜 / 附加选项 (可选)</label>
-                    <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:价格:原材料 (多项用逗号隔开)&#10;例如：加辣:0:小米椒 10g, 加肉条:5:瘦肉 100g"></textarea>
+                    <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:价格:原材料 (多项用逗号隔开)"></textarea>
                 </div>
             </div>
             <div class="flex space-x-2 pt-1">
@@ -340,7 +355,6 @@
             let checked = cloudData.checkedIngredients || {};
             let statusChanged = false;
 
-            // 检查每样需求扣除库存后是否还需要购买
             let netNeededList = [];
             list.forEach(item => {
                 let invItem = inventory[item.key];
@@ -393,7 +407,7 @@
 
             function addIngredientsToSummary(ingredientsStr, times) {
                 if (!ingredientsStr) return;
-                let rawParts = ingredientsStr.split(/[,[,;；]/);
+                let rawParts = ingredientsStr.split(/[,，;；]/);
                 rawParts.forEach(part => {
                     part = part.trim();
                     if (!part) return;
@@ -451,7 +465,6 @@
             return list;
         }
 
-        // 核心：计算扣除库存后的采购清单
         function getAggregatedIngredients() {
             let rawList = getRawAggregatedIngredients();
             let inventory = cloudData.inventory || {};
@@ -516,10 +529,15 @@
         function renderInventory() {
             const container = document.getElementById('inventoryListContainer');
             let inventory = cloudData.inventory || {};
-            let keys = Object.keys(inventory);
+            let query = (document.getElementById('inventorySearchInput').value || '').trim().toLowerCase();
+            
+            let keys = Object.keys(inventory).filter(key => {
+                let item = inventory[key];
+                return !query || item.name.toLowerCase().includes(query);
+            });
 
             if (keys.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">暂无库存数据，请点击右上角添加家里现有的材料~</div>`;
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">没有找到匹配的库存材料~</div>`;
                 return;
             }
 
@@ -680,13 +698,22 @@
         function renderDishesAdmin() {
             const container = document.getElementById('dishesListContainer');
             let dishes = cloudData.dishes || [];
+            let query = (document.getElementById('dishSearchInput').value || '').trim().toLowerCase();
 
-            if (dishes.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">菜品库为空，请点击右上角添加新菜~</div>`;
+            let filteredDishes = dishes.filter(dish => {
+                if (!query) return true;
+                let matchName = dish.name.toLowerCase().includes(query);
+                let matchIng = dish.ingredients && dish.ingredients.toLowerCase().includes(query);
+                let matchCat = dish.category && dish.category.toLowerCase().includes(query);
+                return matchName || matchIng || matchCat;
+            });
+
+            if (filteredDishes.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">没有找到符合条件的菜品~</div>`;
                 return;
             }
 
-            container.innerHTML = dishes.map(dish => {
+            container.innerHTML = filteredDishes.map(dish => {
                 let optionsDesc = dish.options && dish.options.length > 0 ? dish.options.map(o => `${o.name}(+¥${o.price})`).join(', ') : '无';
                 return `
                     <div class="bg-white rounded-xl border p-2.5 flex items-center justify-between shadow-xs">
@@ -834,10 +861,15 @@
         function renderSupermarketList() {
             const container = document.getElementById('supermarketListContainer');
             let list = getAggregatedIngredients();
+            let query = (document.getElementById('supermarketSearchInput').value || '').trim().toLowerCase();
 
-            if (list.length === 0) {
-                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-xs">库存充足，当前无需购买任何原材料！🎉</div>`;
-                document.getElementById('supermarketProgress').innerText = `已买: 0 / 0`;
+            let filteredList = list.filter(item => {
+                return !query || item.name.toLowerCase().includes(query);
+            });
+
+            if (filteredList.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-xs">没有找到匹配的采购项~</div>`;
+                document.getElementById('supermarketProgress').innerText = `已买: 0 / ${list.length}`;
                 return;
             }
 
@@ -846,7 +878,7 @@
             let checkedCount = list.filter(item => cloudData.checkedIngredients[item.key]).length;
             document.getElementById('supermarketProgress').innerText = `已买: ${checkedCount} / ${list.length}`;
 
-            container.innerHTML = list.map(item => {
+            container.innerHTML = filteredList.map(item => {
                 let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
                 let isChecked = !!cloudData.checkedIngredients[item.key];
                 let stockInfo = item.stockUsed ? `<span class="text-[10px] text-emerald-600 block">已用库存抵扣 ${item.stockUsed}${item.unit}</span>` : '';
