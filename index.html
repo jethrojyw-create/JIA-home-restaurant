@@ -2,58 +2,68 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>家庭全周大采购点菜端 (澳洲极速版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 隐藏滚动条但保留滚动功能 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-amber-50/40 text-gray-800 pb-32">
 
-    <!-- 顶部导航 -->
-    <header class="bg-white shadow-xs sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
+    <!-- 顶部导航：使用 w-full 确保完美适配手机屏幕 -->
+    <header class="bg-white shadow-xs sticky top-0 z-40 px-3 py-3 flex justify-between items-center w-full">
         <div class="flex items-center space-x-2">
-            <span class="text-2xl">🍲</span>
+            <span class="text-xl">🍲</span>
             <div>
-                <h1 class="font-bold text-base text-amber-900">家庭全周菜单预定</h1>
-                <p class="text-[10px] text-gray-400" id="currentLoginUserDisplay">当前点菜人: 请设置</p>
+                <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭全周菜单预定</h1>
+                <p class="text-[10px] text-gray-400" id="currentLoginUserDisplay">点菜人: 请设置</p>
             </div>
         </div>
-        <div class="flex items-center space-x-2">
-            <!-- 新增：查看我的预定单按钮 -->
-            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-2 rounded-xl transition flex items-center space-x-1 shadow-xs">
-                <i class="fa-solid fa-receipt"></i>
-                <span>我的预定单</span>
+        <div class="flex items-center space-x-1.5">
+            <!-- 查看全家菜单按钮 -->
+            <button onclick="openFamilyOrdersModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1 border border-amber-200">
+                <i class="fa-solid fa-users text-amber-600"></i>
+                <span>全家菜单</span>
             </button>
-            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-2 rounded-xl transition flex items-center space-x-1 shadow-xs">
+            <!-- 我的预定单按钮 -->
+            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1">
+                <i class="fa-solid fa-receipt"></i>
+                <span>我的</span>
+            </button>
+            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-2.5 py-1.5 rounded-lg transition flex items-center space-x-1">
                 <i class="fa-solid fa-user-pen"></i>
                 <span id="switchUserBtnText">切换</span>
             </button>
         </div>
     </header>
 
-    <!-- 主体内容区 -->
-    <main class="max-w-md mx-auto p-4 space-y-5">
+    <!-- 主体内容区：紧凑手机自适应宽度 -->
+    <main class="w-full max-w-lg mx-auto p-3 space-y-4">
         
         <!-- 星期选择横幅 -->
-        <div class="bg-white rounded-2xl p-4 border border-amber-200 shadow-sm space-y-3">
+        <div class="bg-white rounded-2xl p-3.5 border border-amber-200/60 shadow-xs space-y-2.5">
             <div class="flex justify-between items-center">
-                <h2 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>选择你想预定哪一天的饭菜</h2>
-                <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2.5 py-0.5 rounded-full font-bold">周一</span>
+                <h2 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>选择预定哪一天的饭菜</h2>
+                <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold">周一</span>
             </div>
             <!-- 星期切换标签 -->
-            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1" id="dayTabs">
-                <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition">周一</button>
-                <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周二</button>
-                <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周三</button>
-                <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周四</button>
-                <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周五</button>
-                <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周六</button>
-                <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周日</button>
+            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="dayTabs">
+                <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition">周一</button>
+                <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周二</button>
+                <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周三</button>
+                <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周四</button>
+                <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周五</button>
+                <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周六</button>
+                <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周日</button>
             </div>
         </div>
 
         <!-- 菜单分类导航 -->
-        <div class="flex space-x-2 overflow-x-auto no-scrollbar pb-1" id="categoryTabs">
+        <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs">
             <button onclick="filterCategory('全部')" id="cat-全部" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs">全部菜品</button>
             <button onclick="filterCategory('热菜')" id="cat-热菜" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">热菜</button>
             <button onclick="filterCategory('凉菜')" id="cat-凉菜" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">凉菜</button>
@@ -62,52 +72,65 @@
         </div>
 
         <!-- 菜品列表容器 -->
-        <div id="dishListContainer" class="grid grid-cols-1 gap-3.5">
-            <div class="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border">正在加载云端菜单库...</div>
+        <div id="dishListContainer" class="grid grid-cols-1 gap-3">
+            <div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border">正在加载云端菜单库...</div>
         </div>
     </main>
 
     <!-- 底部已选购物车悬浮栏 -->
-    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-4 z-30 max-w-md mx-auto hidden shadow-2xl rounded-t-3xl">
-        <div class="max-w-md mx-auto space-y-3">
+    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-3.5 z-30 w-full hidden shadow-2xl rounded-t-2xl">
+        <div class="w-full max-w-lg mx-auto space-y-2.5">
             <div class="flex justify-between items-center border-b pb-2">
                 <div>
-                    <span class="font-bold text-sm text-amber-900">已选 <span id="cartCount" class="text-amber-600">0</span> 样菜品</span>
-                    <span class="text-xs text-gray-400 ml-2">(. <span id="cartDayLabel">周一</span>)</span>
+                    <span class="font-bold text-xs text-amber-900">已选 <span id="cartCount" class="text-amber-600">0</span> 样菜品</span>
+                    <span class="text-[11px] text-gray-400 ml-1.5">(<span id="cartDayLabel">周一</span>)</span>
                 </div>
-                <span class="font-extrabold text-amber-800 text-base">预估: ¥<span id="cartTotalPrice">0</span></span>
+                <span class="font-extrabold text-amber-800 text-sm">预估: ¥<span id="cartTotalPrice">0</span></span>
             </div>
-            <div id="cartItemsPreview" class="max-h-32 overflow-y-auto space-y-1.5 text-xs text-gray-600"></div>
-            <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-lg transition text-sm flex items-center justify-center space-x-1">
+            <div id="cartItemsPreview" class="max-h-28 overflow-y-auto space-y-1 text-xs text-gray-600"></div>
+            <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-1">
                 <i class="fa-solid fa-paper-plane"></i>
                 <span>确认提交给采购员</span>
             </button>
         </div>
     </div>
 
-    <!-- 🌟 新增页面/弹窗：查看和修改我的预定单 -->
-    <div id="myOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+    <!-- 🌟 新增：查看全家人点的菜单弹窗 -->
+    <div id="familyOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-receipt mr-1.5"></i>我的全部预定单记录</h3>
-                <button onclick="closeMyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+                <h3 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-users mr-1.5 text-amber-600"></i>全家人本周点菜一览</h3>
+                <button onclick="closeFamilyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <p class="text-xs text-gray-400">在这里你可以查看自己点过的所有饭菜，并可随时删除或取消不需要的订单：</p>
-            <div id="myOrdersListContainer" class="space-y-3 pt-1">
-                <!-- 动态生成我的订单列表 -->
+            <p class="text-[11px] text-gray-400">看看家里其他人本周都想吃什么，避免重复或参考大家的口味：</p>
+            <div id="familyOrdersListContainer" class="space-y-2.5 pt-1">
+                <!-- 动态生成全家菜单汇总 -->
             </div>
-            <button onclick="closeMyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium text-xs transition">关闭</button>
+            <button onclick="closeFamilyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl font-medium text-xs transition">关闭</button>
         </div>
     </div>
 
-    <!-- 第一次进入或切换用户的弹窗 -->
-    <div id="userModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl space-y-4 text-center">
-            <div class="text-4xl">👋</div>
-            <h3 class="font-bold text-lg text-amber-900">欢迎点菜！请先告诉我们你是谁</h3>
-            <p class="text-xs text-gray-500">方便后台统计是谁点的菜，买菜时好核对~</p>
-            <input type="text" id="userNameInput" placeholder="例如：爸爸 / 妈妈 / 儿子 / 小美" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-center text-sm outline-none focus:border-amber-500 font-semibold">
-            <button onclick="saveUser()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 rounded-xl shadow-md transition text-sm">开始点菜</button>
+    <!-- 我的预定单弹窗 -->
+    <div id="myOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b">
+                <h3 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-receipt mr-1.5"></i>我的全部预定单记录</h3>
+                <button onclick="closeMyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
+            </div>
+            <p class="text-[11px] text-gray-400">在这里你可以查看自己点过的所有饭菜，并可随时删除：</p>
+            <div id="myOrdersListContainer" class="space-y-2.5 pt-1"></div>
+            <button onclick="closeMyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl font-medium text-xs transition">关闭</button>
+        </div>
+    </div>
+
+    <!-- 用户设置弹窗 -->
+    <div id="userModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl space-y-3.5 text-center">
+            <div class="text-3xl">👋</div>
+            <h3 class="font-bold text-base text-amber-900">欢迎点菜！请先告诉我们你是谁</h3>
+            <p class="text-[11px] text-gray-500">方便家人知道是谁点的菜~</p>
+            <input type="text" id="userNameInput" placeholder="例如：爸爸 / 妈妈 / 儿子 / 小美" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-xs outline-none focus:border-amber-500 font-semibold">
+            <button onclick="saveUser()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs">开始点菜</button>
         </div>
     </div>
 
@@ -136,6 +159,9 @@
             if(!document.getElementById('myOrdersModal').classList.contains('hidden')) {
                 renderMyOrdersList();
             }
+            if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) {
+                renderFamilyOrdersList();
+            }
         }
 
         async function saveAllData() {
@@ -154,12 +180,12 @@
             let savedUser = localStorage.getItem('family_order_user');
             if (savedUser) {
                 currentUser = savedUser;
-                document.getElementById('currentLoginUserDisplay').innerText = `当前点菜人: ${currentUser}`;
+                document.getElementById('currentLoginUserDisplay').innerText = `点菜人: ${currentUser}`;
                 document.getElementById('switchUserBtnText').innerText = currentUser;
                 document.getElementById('userModal').classList.add('hidden');
             }
             fetchAllData();
-            setInterval(fetchAllData, 8000); // 8秒轮询同步
+            setInterval(fetchAllData, 8000); // 8秒轮询
         }
 
         function openUserModal() {
@@ -175,7 +201,7 @@
             }
             currentUser = name;
             localStorage.setItem('family_order_user', currentUser);
-            document.getElementById('currentLoginUserDisplay').innerText = `当前点菜人: ${currentUser}`;
+            document.getElementById('currentLoginUserDisplay').innerText = `点菜人: ${currentUser}`;
             document.getElementById('switchUserBtnText').innerText = currentUser;
             document.getElementById('userModal').classList.add('hidden');
         }
@@ -185,9 +211,9 @@
             document.getElementById('selectedDayBadge').innerText = day;
             document.querySelectorAll('.day-btn').forEach(btn => {
                 if (btn.id === `day-${day}`) {
-                    btn.className = "day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition";
+                    btn.className = "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition";
                 } else {
-                    btn.className = "day-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+                    btn.className = "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
                 }
             });
             renderDishes();
@@ -214,31 +240,31 @@
             }
 
             if (dishes.length === 0) {
-                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-sm bg-white rounded-2xl border">该分类暂无菜品，快去后台添加吧~</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border">该分类暂无菜品，快去后台添加吧~</div>`;
                 return;
             }
 
             container.innerHTML = dishes.map(dish => {
                 let count = cart[dish.id] || 0;
                 return `
-                    <div class="bg-white rounded-2xl border border-gray-100 p-3.5 flex items-center justify-between shadow-xs">
-                        <div class="flex items-center space-x-3.5 flex-1">
-                            <img src="${dish.image}" class="w-16 h-16 object-cover rounded-xl shadow-xs">
-                            <div class="space-y-1 flex-1">
+                    <div class="bg-white rounded-2xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <img src="${dish.image}" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0">
+                            <div class="space-y-0.5 flex-1 min-w-0">
                                 <div class="flex items-center space-x-1.5">
-                                    <h3 class="font-bold text-sm text-gray-800">${dish.name}</h3>
-                                    <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-medium">${dish.category || '热菜'}</span>
+                                    <h3 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h3>
+                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded font-medium shrink-0">${dish.category || '热菜'}</span>
                                 </div>
-                                <p class="text-[11px] text-gray-400 line-clamp-1">${dish.desc || '暂无简介'}</p>
+                                <p class="text-[10px] text-gray-400 truncate">${dish.desc || '暂无简介'}</p>
                                 <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
                             </div>
                         </div>
-                        <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1.5 shrink-0 ml-2">
                             ${count > 0 ? `
-                                <button onclick="changeCart(${dish.id}, -1)" class="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold text-sm hover:bg-gray-200 transition"><i class="fa-solid fa-minus text-xs"></i></button>
-                                <span class="font-bold text-sm w-5 text-center">${count}</span>
+                                <button onclick="changeCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold hover:bg-gray-200 transition"><i class="fa-solid fa-minus text-[10px]"></i></button>
+                                <span class="font-bold text-xs w-4 text-center">${count}</span>
                             ` : ''}
-                            <button onclick="changeCart(${dish.id}, 1)" class="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-sm shadow-md hover:bg-amber-700 transition"><i class="fa-solid fa-plus text-xs"></i></button>
+                            <button onclick="changeCart(${dish.id}, 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold shadow-sm hover:bg-amber-700 transition"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
                 `;
@@ -269,7 +295,7 @@
                 if (dish) {
                     totalCount += count;
                     totalPrice += dish.price * count;
-                    previewHtml += `<div class="flex justify-between"><span>${dish.name} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
+                    previewHtml += `<div class="flex justify-between truncate"><span>${dish.name} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
                 }
             }
 
@@ -325,6 +351,48 @@
             alert(`成功为【${selectedDay}】提交订单！`);
         }
 
+        // 🌟 查看全家人点菜面板
+        function openFamilyOrdersModal() {
+            document.getElementById('familyOrdersModal').classList.remove('hidden');
+            renderFamilyOrdersList();
+        }
+        function closeFamilyOrdersModal() {
+            document.getElementById('familyOrdersModal').classList.add('hidden');
+        }
+        function renderFamilyOrdersList() {
+            const container = document.getElementById('familyOrdersListContainer');
+            const orders = cloudData.orders || [];
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">大家还没有提交过任何预定单~</div>`;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => `
+                <div class="bg-amber-50/60 border border-amber-200/80 p-3 rounded-xl space-y-1.5">
+                    <div class="flex justify-between items-center border-b border-amber-100 pb-1">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">${order.user || '某位家人'}</span>
+                            <span class="font-bold text-xs text-amber-900">预定: ${order.targetDay || '周一'}</span>
+                        </div>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800'}">${order.status}</span>
+                    </div>
+                    <div class="space-y-0.5 text-xs text-gray-700">
+                        ${order.items.map(i => `
+                            <div class="flex justify-between">
+                                <span>${i.name} x${i.count}</span>
+                                <span class="font-bold">¥${i.price * i.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px] text-gray-400">
+                        <span>提交时间: ${order.time}</span>
+                        <span class="font-bold text-amber-900">合计: ¥${order.totalPrice}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         // 🌟 我的预定单管理功能
         function openMyOrdersModal() {
             if (!currentUser) {
@@ -334,30 +402,28 @@
             document.getElementById('myOrdersModal').classList.remove('hidden');
             renderMyOrdersList();
         }
-
         function closeMyOrdersModal() {
             document.getElementById('myOrdersModal').classList.add('hidden');
         }
-
         function renderMyOrdersList() {
             const container = document.getElementById('myOrdersListContainer');
             const myOrders = (cloudData.orders || []).filter(o => o.user === currentUser);
 
             if (myOrders.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">你还没有提交过任何预定单~</div>`;
+                container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">你还没有提交过任何预定单~</div>`;
                 return;
             }
 
             container.innerHTML = myOrders.map(order => `
-                <div class="bg-amber-50/50 border border-amber-200 p-3.5 rounded-2xl space-y-2">
-                    <div class="flex justify-between items-center border-b border-amber-100 pb-1.5">
+                <div class="bg-amber-50/50 border border-amber-200 p-3 rounded-xl space-y-1.5">
+                    <div class="flex justify-between items-center border-b border-amber-100 pb-1">
                         <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1"></i>${order.targetDay || '周一'}预定</span>
                         <div class="space-x-1">
                             <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800'}">${order.status}</span>
                             <button onclick="deleteMyOrder(${order.id})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <div class="space-y-1 text-xs text-gray-700">
+                    <div class="space-y-0.5 text-xs text-gray-700">
                         ${order.items.map(i => `
                             <div class="flex justify-between">
                                 <span>${i.name} x${i.count}</span>
@@ -365,7 +431,7 @@
                             </div>
                         `).join('')}
                     </div>
-                    <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[11px]">
+                    <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
                         <span class="text-gray-400">时间: ${order.time}</span>
                         <span class="font-bold text-amber-900">总计: ¥${order.totalPrice}</span>
                     </div>
