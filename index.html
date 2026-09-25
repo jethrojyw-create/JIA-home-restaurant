@@ -42,6 +42,17 @@
     <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-4">
         
+        <!-- 🔍 搜索栏组件 -->
+        <div class="relative w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </span>
+            <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" placeholder="搜索想吃的菜品..." class="w-full bg-white border border-amber-200/80 rounded-2xl pl-9 pr-8 py-2.5 text-xs outline-none focus:border-amber-600 shadow-xs transition placeholder-gray-400 font-medium">
+            <button onclick="clearSearch()" id="clearSearchBtn" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 hidden text-xs">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </button>
+        </div>
+
         <!-- 星期选择横幅 -->
         <div class="bg-white rounded-2xl p-3.5 border border-amber-200/60 shadow-xs space-y-2.5">
             <div class="flex justify-between items-center">
@@ -92,16 +103,14 @@
         </div>
     </div>
 
-    <!-- 🍳 配菜选择弹窗 (支持后台对象配置及加价) -->
+    <!-- 🍳 配菜选择弹窗 -->
     <div id="optionsModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-sm text-amber-900" id="optionsDishName">选择配菜与口味偏好</h3>
                 <button onclick="closeOptionsModal()" class="text-gray-400 hover:text-gray-600 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <div id="optionsListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs py-1">
-                <!-- 动态生成配菜复选框 -->
-            </div>
+            <div id="optionsListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs py-1"></div>
             <div class="flex space-x-2 pt-2">
                 <button onclick="closeOptionsModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold">取消</button>
                 <button onclick="confirmAddWithOptions()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold">确认加入购物车</button>
@@ -158,9 +167,9 @@
         let currentUser = '';
         let selectedDay = '周一';
         let selectedCategory = '全部';
-        let cart = {}; // key: dishId_optionsHash, value: { dish, count, selectedOptions, unitPrice }
-        let currentLang = localStorage.getItem('family_order_lang') || 'zh';
-        let activeDishForOptions = null; // 当前正在选配菜的菜品对象
+        let searchKeyword = ''; // 🔍 新增：搜索关键字状态
+        let cart = {}; 
+        let activeDishForOptions = null; 
 
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
@@ -196,6 +205,8 @@
             }
             return cat;
         }
+
+        let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
         const i18nText = {
             zh: {
@@ -271,6 +282,7 @@
                 btn.innerText = t(dayKey);
             });
             document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(selectedDay));
+            document.getElementById('searchInput').placeholder = currentLang === 'zh' ? '搜索想吃的菜品...' : 'Search dishes...';
         }
 
         function getDayKeyMap(day) {
@@ -366,21 +378,53 @@
             renderDishes();
         }
 
+        // 🔍 新增：处理搜索输入实时过滤
+        function handleSearchInput(value) {
+            searchKeyword = value.trim().toLowerCase();
+            let clearBtn = document.getElementById('clearSearchBtn');
+            if (searchKeyword.length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            renderDishes();
+        }
+
+        // 🔍 新增：清空搜索框
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            searchKeyword = '';
+            document.getElementById('clearSearchBtn').classList.add('hidden');
+            renderDishes();
+        }
+
         function renderDishes() {
             const container = document.getElementById('dishListContainer');
             let dishes = cloudData.dishes || [];
-            if (selectedCategory !== '全部') dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
+
+            // 分类过滤
+            if (selectedCategory !== '全部') {
+                dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
+            }
+
+            // 🔍 搜索关键字过滤（支持匹配中文名、英文翻译及描述）
+            if (searchKeyword) {
+                dishes = dishes.filter(d => {
+                    let nameZh = (d.name || '').toLowerCase();
+                    let nameEn = (translateDishName(d.name) || '').toLowerCase();
+                    let desc = (d.desc || '').toLowerCase();
+                    return nameZh.includes(searchKeyword) || nameEn.includes(searchKeyword) || desc.includes(searchKeyword);
+                });
+            }
 
             if (dishes.length === 0) {
-                container.innerHTML = `<div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border" data-i18n="loading_dishes">当前分类暂无菜品~</div>`;
+                container.innerHTML = `<div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border">${currentLang === 'zh' ? '未找到相关菜品~' : 'No dishes found~'}</div>`;
                 return;
             }
 
             container.innerHTML = dishes.map(dish => {
                 let displayName = translateDishName(dish.name);
                 let displayCat = translateCategory(dish.category || '热菜');
-                
-                // 兼容后台的 options 结构（可能是对象数组 [{name, price}] 或字符串数组）
                 let options = dish.options || dish.subOptions || [];
                 let hasOptions = options.length > 0;
 
@@ -413,7 +457,6 @@
             }).join('');
         }
 
-        // 🍳 打开配菜选择弹窗
         function openOptionsModal(dishId) {
             let dish = (cloudData.dishes || []).find(d => d.id === dishId);
             if (!dish) return;
@@ -427,7 +470,6 @@
                 container.innerHTML = `<div class="text-center py-4 text-gray-400 text-xs">该菜品暂无可选配菜</div>`;
             } else {
                 container.innerHTML = options.map((opt, idx) => {
-                    // 兼容对象格式 {name: '加辣', price: 2} 或纯字符串 '加辣'
                     let optName = typeof opt === 'object' ? opt.name : opt;
                     let optPrice = typeof opt === 'object' ? (parseFloat(opt.price) || 0) : 0;
                     
@@ -451,7 +493,6 @@
             activeDishForOptions = null;
         }
 
-        // 确认加入带配菜的菜品
         function confirmAddWithOptions() {
             if (!activeDishForOptions) return;
             let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
@@ -463,7 +504,7 @@
                 extraPrice += parseFloat(cb.dataset.price) || 0;
             });
 
-            selectedOptions.sort(); // 排序确保组合唯一性
+            selectedOptions.sort(); 
             let key = `${activeDishForOptions.id}_${selectedOptions.join('_')}`;
             let unitPrice = activeDishForOptions.price + extraPrice;
 
@@ -482,7 +523,6 @@
             updateCartBar();
         }
 
-        // 添加普通无配菜菜品
         function addSimpleDishToCart(dishId) {
             let dish = (cloudData.dishes || []).find(d => d.id === dishId);
             if (!dish) return;
@@ -549,7 +589,7 @@
                 items.push({ 
                     id: item.dish.id, 
                     name: item.dish.name, 
-                    subOption: item.selectedOptions.join(', '), // 兼容显示
+                    subOption: item.selectedOptions.join(', '), 
                     selectedOptions: item.selectedOptions,
                     price: item.unitPrice, 
                     count: item.count,
