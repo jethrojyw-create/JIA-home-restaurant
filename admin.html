@@ -19,7 +19,7 @@
             <span class="text-xl">🛒</span>
             <div>
                 <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭采购管理后台</h1>
-                <p class="text-[10px] text-gray-400">智能库存抵扣与搜索</p>
+                <p class="text-[10px] text-gray-400">智能库存抵扣与订单清空</p>
             </div>
         </div>
         <div class="flex items-center space-x-1.5">
@@ -71,11 +71,11 @@
             </div>
         </div>
 
-        <!-- 面板 1.5：当天订单汇总视图 (新增) -->
+        <!-- 面板 1.5：当天订单汇总视图 (与设备日期自动同步) -->
         <div id="panel-todaySummary" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-3">
                 <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>当天订单汇总与一键处理</h3>
+                    <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>当天订单汇总与一键结算</h3>
                     <select id="selectedDaySelect" onchange="renderTodaySummary()" class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg px-2 py-1 outline-none font-bold">
                         <option value="周一">周一</option>
                         <option value="周二">周二</option>
@@ -92,13 +92,13 @@
                     <div class="text-center py-6 text-gray-400 text-xs">暂无当天菜品需求...</div>
                 </div>
 
-                <!-- 一键完成订单并扣除库存按钮 -->
+                <!-- 一键结算并清空当天订单按钮 -->
                 <div class="pt-2">
-                    <button onclick="completeTodayOrdersAndDeductStock()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-1.5">
-                        <i class="fa-solid fa-check-double"></i>
-                        <span>一键完成当天订单并扣除库存</span>
+                    <button onclick="settleAndClearTodayOrders()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-trash-can-arrow-up"></i>
+                        <span>一键扣除库存并清空当天订单</span>
                     </button>
-                    <p class="text-[10px] text-gray-400 text-center mt-1.5">点击后将把当天订单设为“已完成”，并自动从现有库存中扣除对应原材料用量</p>
+                    <p class="text-[10px] text-gray-400 text-center mt-1.5">点击后将扣除对应库存，并**彻底清空**当天所有订单以接受新点菜</p>
                 </div>
             </div>
         </div>
@@ -341,8 +341,21 @@
         }
 
         window.onload = function() {
+            initDeviceDateSelection(); // 自动对齐设备当前日期
             fetchAllData();
             setInterval(fetchAllData, 8000);
+        }
+
+        // 根据设备的真实日期，自动初始化下拉框选项
+        function initDeviceDateSelection() {
+            const daysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const todayIndex = new Date().getDay(); // 0是周日，1是周一...
+            const todayStr = daysMap[todayIndex];
+            
+            let selectElem = document.getElementById('selectedDaySelect');
+            if (selectElem) {
+                selectElem.value = todayStr;
+            }
         }
 
         function switchTab(tab) {
@@ -403,12 +416,10 @@
 
             (cloudData.orders || []).forEach(order => {
                 if (!order.items || order.items.length === 0) return;
-                if (order.status === '已完成') return;
-
                 let targetStatus = (netNeededList.length === 0 || allChecked) ? '已采购' : '待采购';
                 if (!order.status) order.status = '待采购';
 
-                if (order.status !== '已完成' && order.status !== targetStatus) {
+                if (order.status !== targetStatus) {
                     order.status = targetStatus;
                     statusChanged = true;
                 }
@@ -424,7 +435,6 @@
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (order) {
                 if (!order.status || order.status === '待采购') order.status = '已采购';
-                else if (order.status === '已采购') order.status = '已完成';
                 else order.status = '待采购';
                 await saveAllData();
                 renderAll();
@@ -560,7 +570,7 @@
             }).join('');
         }
 
-        // ================= 当天订单汇总与一键完成扣库存核心逻辑 =================
+        // ================= 当天订单汇总与清空订单逻辑 =================
         function renderTodaySummary() {
             const container = document.getElementById('todayDishesSummaryContainer');
             const selectedDay = document.getElementById('selectedDaySelect').value;
@@ -571,7 +581,6 @@
                 return;
             }
 
-            // 汇总当天各个菜品的总需求量及所需原材料
             let dishCounts = {};
             let ingredientSummary = {};
             let dishesMap = {};
@@ -586,7 +595,6 @@
                     }
                     dishCounts[key].count += item.count;
 
-                    // 计算原材料
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
                         let times = item.count;
@@ -624,7 +632,6 @@
             }
             html += `</div>`;
 
-            // 原材料消耗预览
             html += `<div class="text-[11px] font-bold text-gray-500 border-b pt-2 pb-1">🥩 预计消耗原材料明细：</div>`;
             html += `<div class="grid grid-cols-1 gap-1.5">`;
             let hasIng = false;
@@ -647,9 +654,9 @@
             container.innerHTML = html;
         }
 
-        async function completeTodayOrdersAndDeductStock() {
+        async function settleAndClearTodayOrders() {
             const selectedDay = document.getElementById('selectedDaySelect').value;
-            if (!confirm(`确定要一键完成【${selectedDay}】的所有订单，并自动从库存中扣除相应原材料吗？`)) return;
+            if (!confirm(`确定要结算并【清空】【${selectedDay}】的所有订单吗？\n\n注意：此操作将自动扣除库存，并彻底删除当天订单以便接受新的点菜！`)) return;
 
             await fetchAllData();
             let orders = cloudData.orders || [];
@@ -657,18 +664,15 @@
             let dishesMap = {};
             (cloudData.dishes || []).forEach(d => { dishesMap[d.id] = d; });
 
-            let targetOrders = orders.filter(o => o.targetDay === selectedDay && o.status !== '已完成');
+            let targetOrders = orders.filter(o => o.targetDay === selectedDay);
             if (targetOrders.length === 0) {
-                alert(`【${selectedDay}】没有找到未完成的订单！`);
+                alert(`【${selectedDay}】当前没有订单可以清空！`);
                 return;
             }
 
-            // 1. 统计当天订单消耗的所有原材料总量
+            // 1. 统计当天订单消耗的所有原材料总量并扣除库存
             let ingredientConsumption = {};
             targetOrders.forEach(order => {
-                // 将订单状态直接置为已完成
-                order.status = '已完成';
-
                 if (!order.items) return;
                 order.items.forEach(item => {
                     let dish = dishesMap[item.id];
@@ -694,13 +698,11 @@
                 });
             });
 
-            // 2. 自动扣除库存
             for (let key in ingredientConsumption) {
                 let consumption = ingredientConsumption[key];
                 if (inventory[key]) {
                     inventory[key].total = Math.max(0, inventory[key].total - consumption.total);
                 } else {
-                    // 如果库存中原本没有该项，则以负数或 0 初始化
                     inventory[key] = {
                         name: consumption.name,
                         total: -consumption.total,
@@ -710,10 +712,14 @@
             }
 
             cloudData.inventory = inventory;
+
+            // 2. 彻底过滤并清空当天订单
+            cloudData.orders = orders.filter(o => o.targetDay !== selectedDay);
+
             updateOrdersStatusAutomatically();
             await saveAllData();
             renderAll();
-            alert(`【${selectedDay}】订单已全部标记为完成，且相应原材料库存已成功扣除！🎉`);
+            alert(`【${selectedDay}】订单已成功清空，库存已完成扣除！现在可以接受新的点菜了✨`);
         }
         // =======================================================================
 
@@ -840,7 +846,7 @@
                     `;
 
                     dayOrders.forEach(order => {
-                        let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800');
+                        let statusColor = order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800';
                         html += `
                             <div class="bg-white p-2.5 rounded-xl border border-amber-100 space-y-1.5 shadow-xs">
                                 <div class="flex justify-between items-center text-[11px] border-b border-gray-100 pb-1">
