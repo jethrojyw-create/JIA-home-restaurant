@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>家庭大厨管理系统 (澳洲极速版)</title>
+    <title>家庭全周大采购管理后台 (澳洲极速版)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -12,13 +12,13 @@
     <!-- 顶部导航 -->
     <header class="bg-white shadow-xs sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center space-x-2">
-            <span class="text-2xl">👨‍🍳</span>
-            <h1 class="font-bold text-base text-amber-900">家庭大厨管理后台</h1>
+            <span class="text-2xl">🛒</span>
+            <h1 class="font-bold text-base text-amber-900">周末集中采购与全周订单</h1>
         </div>
         <div class="flex items-center space-x-2">
             <button onclick="openDishModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-2 rounded-full transition flex items-center space-x-1 shadow-xs">
                 <i class="fa-solid fa-plus"></i>
-                <span>添加新菜品</span>
+                <span>加菜</span>
             </button>
             <button onclick="fetchAllData()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium px-3 py-2 rounded-full border border-amber-200 transition flex items-center space-x-1">
                 <i class="fa-solid fa-rotate"></i>
@@ -30,37 +30,48 @@
     <!-- 主体内容区 -->
     <main class="max-w-md mx-auto p-4 space-y-6">
         
-        <!-- 订单统计横幅 -->
+        <!-- 统计横幅 -->
         <div class="bg-gradient-to-r from-amber-600 to-amber-700 rounded-2xl p-4 text-white shadow-md flex justify-between items-center">
             <div>
-                <p class="text-xs text-amber-100">今日待处理订单</p>
-                <h2 id="pendingCount" class="text-2xl font-bold mt-0.5">0 单</h2>
+                <p class="text-xs text-amber-100">全周总预定单数</p>
+                <h2 id="totalOrderCount" class="text-2xl font-bold mt-0.5">0 单</h2>
             </div>
             <div class="text-right">
-                <p class="text-xs text-amber-100">今日累计销售额</p>
+                <p class="text-xs text-amber-100">全周总预算金额</p>
                 <h2 id="totalSales" class="text-2xl font-bold mt-0.5">¥0</h2>
             </div>
         </div>
 
-        <!-- 订单列表 -->
+        <!-- 按星期查看的采购与订单看板 -->
         <section>
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-clipboard-list mr-1.5"></i>实时点餐订单</h3>
-                <span class="text-xs text-gray-400">自动同步中</span>
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-calendar-days mr-1.5"></i>按星期分类查看订单</h3>
+                <span class="text-xs text-gray-400">周末一站式采购清单</span>
             </div>
-            <div id="ordersContainer" class="space-y-3">
-                <div class="text-center py-16 text-gray-400 text-sm">正在加载云端订单...</div>
+
+            <!-- 星期切换标签 -->
+            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-3" id="adminDayTabs">
+                <button onclick="switchAdminDay('周一')" id="admonday-周一" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition">周一</button>
+                <button onclick="switchAdminDay('周二')" id="admonday-周二" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周二</button>
+                <button onclick="switchAdminDay('周三')" id="admonday-周三" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周三</button>
+                <button onclick="switchAdminDay('周四')" id="admonday-周四" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周四</button>
+                <button onclick="switchAdminDay('周五')" id="admonday-周五" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周五</button>
+                <button onclick="switchAdminDay('周六')" id="admonday-周六" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周六</button>
+                <button onclick="switchAdminDay('周日')" id="admonday-周日" class="admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition">周日</button>
+            </div>
+
+            <!-- 选定星期的订单容器 -->
+            <div id="dayOrdersContainer" class="space-y-3">
+                <div class="text-center py-12 bg-white rounded-2xl border text-gray-400 text-sm">正在加载...</div>
             </div>
         </section>
 
-        <!-- 现有菜单管理预览 -->
+        <!-- 菜单库管理 -->
         <section class="pt-2">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-utensils mr-1.5"></i>当前菜单库管理</h3>
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-utensils mr-1.5"></i>菜单库管理</h3>
             </div>
-            <div id="dishManageContainer" class="grid grid-cols-1 gap-3">
-                <!-- 菜品列表动态渲染 -->
-            </div>
+            <div id="dishManageContainer" class="grid grid-cols-1 gap-3"></div>
         </section>
     </main>
 
@@ -109,15 +120,15 @@
     </div>
 
     <script>
-        // ======================== npoint 接口配置 ========================
+        // ======================== 你的 npoint 接口 ========================
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-        // ================================================================
+        // =================================================================
 
         let cloudData = { dishes: [], orders: [] };
+        let selectedAdminDay = '周一'; // 后台当前查看的星期
 
         async function fetchAllData() {
             try {
-                // 在请求链接后面加上一个不断变化的时间戳，防止 iPhone 缓存旧数据
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
                 if (json) {
@@ -143,57 +154,30 @@
             }
         }
 
+        function switchAdminDay(day) {
+            selectedAdminDay = day;
+            document.querySelectorAll('.admonday-btn').forEach(btn => {
+                if (btn.id === `admonday-${day}`) {
+                    btn.className = "admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition";
+                } else {
+                    btn.className = "admonday-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+                }
+            });
+            renderDayOrders();
+        }
+
         function renderDashboard() {
             const orders = cloudData.orders || [];
             const dishes = cloudData.dishes || [];
 
-            // 统计待办与销售额
-            const pending = orders.filter(o => o.status === '待制作').length;
+            // 全周总统计
+            document.getElementById('totalOrderCount').innerText = `${orders.length} 单`;
             const totalSales = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
-            document.getElementById('pendingCount').innerText = `${pending} 单`;
             document.getElementById('totalSales').innerText = `¥${totalSales}`;
 
-            // 渲染订单列表
-            const orderContainer = document.getElementById('ordersContainer');
-            if (orders.length === 0) {
-                orderContainer.innerHTML = `<div class="text-center py-12 bg-white rounded-2xl border border-gray-100 text-gray-400 text-sm">暂无点餐订单~</div>`;
-            } else {
-                orderContainer.innerHTML = orders.map(order => `
-                    <div class="bg-white border border-gray-100 p-4 rounded-2xl shadow-xs space-y-3">
-                        <div class="flex justify-between items-center border-b border-gray-100 pb-2">
-                            <div>
-                                <span class="font-bold text-amber-900 text-base"><i class="fa-solid fa-user-circle mr-1"></i> ${order.user}</span>
-                                <span class="text-xs text-gray-400 ml-2">${order.time}</span>
-                            </div>
-                            <span class="text-xs px-2.5 py-1 rounded-full font-medium ${order.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800 animate-pulse'}">${order.status}</span>
-                        </div>
-                        <div class="space-y-1.5">
-                            ${order.items.map(i => `
-                                <div class="flex justify-between text-sm text-gray-700">
-                                    <div>
-                                        <span class="font-semibold">${i.name}</span>
-                                        <span class="text-gray-400 ml-1">x${i.count}</span>${i.note ? `<span class="text-amber-600 ml-1 bg-amber-50 px-1.5 py-0.5 rounded text-xs">(${i.note})</span>` : ''}
-                                    </div>
-                                    <span class="font-bold">¥${i.price * i.count}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="flex justify-between items-center pt-2 border-t border-gray-100">
-                            <span class="text-xs font-bold text-amber-900">合计：¥${order.totalPrice}</span>
-                            <div class="space-x-2">
-                                ${order.status === '待制作' ? `
-                                    <button onclick="updateOrderStatus(${order.id}, '已完成')" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition shadow-xs">接单并完成</button>
-                                ` : `
-                                    <button onclick="updateOrderStatus(${order.id}, '待制作')" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-3 py-1.5 rounded-lg font-medium transition">设为待制作</button>
-                                `}
-                                <button onclick="deleteOrder(${order.id})" class="text-gray-300 hover:text-red-500 text-xs px-1.5 py-1.5 transition"><i class="fa-solid fa-trash"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            }
+            renderDayOrders();
 
-            // 渲染菜单管理列表（附带修改按钮）
+            // 渲染菜单管理
             const dishContainer = document.getElementById('dishManageContainer');
             if (dishes.length === 0) {
                 dishContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs bg-white rounded-xl border">菜单库暂无菜品</div>`;
@@ -204,16 +188,60 @@
                             <img src="${dish.image}" class="w-12 h-12 object-cover rounded-lg">
                             <div>
                                 <h4 class="font-bold text-sm text-gray-800">${dish.name} <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded ml-1">${dish.category || '热菜'}</span></h4>
-                                <p class="text-xs text-amber-600 font-semibold mt-0.5">¥${dish.price} <span class="text-gray-400 font-normal ml-1">(${dish.desc || '暂无描述'})</span></p>
+                                <p class="text-xs text-amber-600 font-semibold mt-0.5">¥${dish.price} <span class="text-gray-400 font-normal ml-1">(${dish.desc || ''})</span></p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-1">
-                            <button onclick="openEditDishModal(${dish.id})" class="text-gray-400 hover:text-amber-600 p-2 transition" title="修改"><i class="fa-solid fa-pen-to-square"></i></button>
-                            <button onclick="deleteDish(${dish.id})" class="text-gray-300 hover:text-red-500 p-2 transition" title="删除"><i class="fa-solid fa-trash"></i></button>
+                            <button onclick="openEditDishModal(${dish.id})" class="text-gray-400 hover:text-amber-600 p-2 transition"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteDish(${dish.id})" class="text-gray-300 hover:text-red-500 p-2 transition"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                 `).join('');
             }
+        }
+
+        function renderDayOrders() {
+            const container = document.getElementById('dayOrdersContainer');
+            const orders = (cloudData.orders || []).filter(o => (o.targetDay || '周一') === selectedAdminDay);
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 bg-white rounded-2xl border text-gray-400 text-sm">【${selectedAdminDay}】暂无家人预定菜品~</div>`;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => `
+                <div class="bg-white border border-gray-100 p-4 rounded-2xl shadow-xs space-y-3">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                        <div>
+                            <span class="font-bold text-amber-900 text-base"><i class="fa-solid fa-user-circle mr-1"></i> ${order.user}</span>
+                            <span class="text-xs text-gray-400 ml-2">${order.time}</span>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}">${order.status}</span>
+                    </div>
+                    <div class="space-y-1.5">
+                        ${order.items.map(i => `
+                            <div class="flex justify-between text-sm text-gray-700">
+                                <div>
+                                    <span class="font-semibold">${i.name}</span>
+                                    <span class="text-gray-400 ml-1">x${i.count}</span>${i.note ? `<span class="text-amber-600 ml-1 bg-amber-50 px-1.5 py-0.5 rounded text-xs">(${i.note})</span>` : ''}
+                                </div>
+                                <span class="font-bold">¥${i.price * i.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <span class="text-xs font-bold text-amber-900">合计：¥${order.totalPrice}</span>
+                        <div class="space-x-2">
+                            ${order.status === '待采购' ? `
+                                <button onclick="updateOrderStatus(${order.id}, '已采购')" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 rounded-lg font-medium transition shadow-xs">标记已采购</button>
+                            ` : `
+                                <button onclick="updateOrderStatus(${order.id}, '待采购')" class="bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs px-3 py-1.5 rounded-lg font-medium transition">设为待采购</button>
+                            `}
+                            <button onclick="deleteOrder(${order.id})" class="text-gray-300 hover:text-red-500 text-xs px-1.5 py-1.5 transition"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function updateOrderStatus(orderId, newStatus) {
@@ -227,7 +255,7 @@
         }
 
         async function deleteOrder(orderId) {
-            if (!confirm('确定要删除这条订单记录吗？')) return;
+            if (!confirm('确定要删除这条预定记录吗？')) return;
             await fetchAllData();
             cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
             await saveAllData();
@@ -283,7 +311,6 @@
             if (!cloudData.dishes) cloudData.dishes = [];
 
             if (editId) {
-                // 修改已有菜品
                 let dish = cloudData.dishes.find(d => d.id == editId);
                 if (dish) {
                     dish.name = name;
@@ -293,14 +320,13 @@
                     dish.desc = desc;
                 }
             } else {
-                // 新增菜品
                 const newDish = {
                     id: Date.now(),
                     name,
                     price,
                     category,
                     image,
-                    desc: desc || '美味家常菜'
+                    desc: desc || ''
                 };
                 cloudData.dishes.push(newDish);
             }
