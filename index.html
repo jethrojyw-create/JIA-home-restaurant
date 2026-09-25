@@ -7,15 +7,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-amber-50/50 text-gray-800 pb-28">
+<body class="bg-amber-50/40 text-gray-800 pb-32">
 
-    <!-- 顶部导航 -->
+    <!-- 顶部导航与身份选择 -->
     <header class="bg-white shadow-xs sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center space-x-2">
             <span class="text-2xl">🍲</span>
-            <h1 class="font-bold text-lg text-amber-900">温馨家庭点餐</h1>
+            <h1 class="font-bold text-base text-amber-900">温馨家庭点餐</h1>
         </div>
-        <!-- 身份选择 -->
         <div class="flex items-center bg-amber-100/60 px-3 py-1.5 rounded-full text-sm">
             <i class="fa-solid fa-user text-amber-700 mr-1.5"></i>
             <select id="userSelect" class="bg-transparent font-medium text-amber-900 outline-none">
@@ -29,15 +28,24 @@
         </div>
     </header>
 
+    <!-- 分类标签栏 -->
+    <nav class="bg-white border-b border-gray-100 px-4 py-2 sticky top-[57px] z-30 flex space-x-3 overflow-x-auto no-scrollbar shadow-xs">
+        <button onclick="filterCategory('全部')" id="cat-全部" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-amber-600 text-white whitespace-nowrap shadow-xs transition">全部</button>
+        <button onclick="filterCategory('热菜')" id="cat-热菜" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">热菜 🍳</button>
+        <button onclick="filterCategory('凉菜')" id="cat-凉菜" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">凉菜 🥗</button>
+        <button onclick="filterCategory('主食/汤品')" id="cat-主食/汤品" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">主食/汤 🍜</button>
+        <button onclick="filterCategory('饮品/甜点')" id="cat-饮品/甜点" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition">饮品/甜点 🧋</button>
+    </nav>
+
     <!-- 菜品展示网格 -->
     <main class="max-w-md mx-auto p-4">
         <div id="dishGrid" class="grid grid-cols-1 gap-4">
-            <!-- 动态加载菜品 -->
+            <!-- 动态生成菜品卡片 -->
         </div>
     </main>
 
     <!-- 底部悬浮购物车栏 -->
-    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg p-4 max-w-md mx-auto flex items-center justify-between z-50 hidden">
+    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-xl p-4 max-w-md mx-auto flex items-center justify-between z-50 hidden">
         <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleCartModal()">
             <div class="relative bg-amber-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md">
                 <i class="fa-solid fa-cart-shopping text-lg"></i>
@@ -45,7 +53,7 @@
             </div>
             <div>
                 <p id="cartTotalPrice" class="text-lg font-bold text-amber-900">¥0</p>
-                <p class="text-xs text-gray-500">点击查看已选菜品</p>
+                <p class="text-xs text-gray-400">点击查看已选清单及备注</p>
             </div>
         </div>
         <button onclick="submitOrder()" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-2.5 rounded-full shadow-md transition">
@@ -53,49 +61,82 @@
         </button>
     </div>
 
-    <!-- 购物车明细弹窗 -->
+    <!-- 购物车及口味备注弹窗 -->
     <div id="cartModal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center hidden">
-        <div class="bg-white w-full max-w-md rounded-t-2xl p-5 max-h-[70vh] flex flex-col">
+        <div class="bg-white w-full max-w-md rounded-t-2xl p-5 max-h-[75vh] flex flex-col">
             <div class="flex justify-between items-center pb-3 border-b">
                 <h3 class="font-bold text-lg text-amber-900">已选菜品清单</h3>
                 <button onclick="toggleCartModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <div id="cartItemsList" class="overflow-y-auto py-4 space-y-3 flex-1">
-                <!-- 动态生成购物车内项目 -->
+            
+            <div id="cartItemsList" class="overflow-y-auto py-4 space-y-4 flex-1">
+                <!-- 动态生成购物车内项目及备注输入框 -->
             </div>
-            <div class="pt-3 border-t flex justify-between items-center font-bold">
-                <span>合计：</span>
-                <span id="cartModalTotal" class="text-xl text-amber-600">¥0</span>
+
+            <div class="pt-3 border-t space-y-3">
+                <div class="flex justify-between items-center font-bold">
+                    <span>合计：</span>
+                    <span id="cartModalTotal" class="text-xl text-amber-600">¥0</span>
+                </div>
+                <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-medium shadow-md transition">
+                    确认下单给大厨
+                </button>
             </div>
         </div>
     </div>
 
     <script>
-        // 默认内置菜品（如果本地没有）
+        // 默认内置菜品（如本地没有）
         let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [
             { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
             { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
-            { id: 3, name: '番茄炒鸡蛋', price: 22, category: '热菜', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300', desc: '经典家常，酸甜开胃' }
+            { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃' },
+            { id: 4, name: '番茄鸡蛋面', price: 22, category: '主食/汤品', image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300', desc: '手工面条，汤鲜味美' },
+            { id: 5, name: '鲜榨冰镇西瓜汁', price: 15, category: '饮品/甜点', image: 'https://images.unsplash.com/photo-1589734553456-25f73d4c4f9a?w=300', desc: '100%纯西瓜鲜榨' }
         ];
 
         let cart = [];
+        let currentCategory = '全部';
+
+        function filterCategory(category) {
+            currentCategory = category;
+            // 更新分类按钮高亮样式
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.id === `cat-${category}`) {
+                    btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-amber-600 text-white whitespace-nowrap shadow-xs transition";
+                } else {
+                    btn.className = "cat-btn px-4 py-1.5 rounded-full text-sm font-medium bg-gray-100 text-gray-600 whitespace-nowrap transition";
+                }
+            });
+            renderDishes();
+        }
 
         function renderDishes() {
             const grid = document.getElementById('dishGrid');
-            grid.innerHTML = dishes.map(dish => `
-                <div class="bg-white rounded-xl shadow-xs overflow-hidden flex border border-gray-100">
-                    <img src="${dish.image}" alt="${dish.name}" class="w-28 h-28 object-cover">
-                    <div class="p-3 flex-1 flex flex-col justify-between">
+            const filteredDishes = currentCategory === '全部' ? dishes : dishes.filter(d => d.category === currentCategory);
+
+            if (filteredDishes.length === 0) {
+                grid.innerHTML = `<div class="text-center py-16 text-gray-400">该分类下暂无菜品~</div>`;
+                return;
+            }
+
+            grid.innerHTML = filteredDishes.map(dish => `
+                <div class="bg-white rounded-2xl shadow-xs overflow-hidden flex border border-gray-100 p-2.5 items-center">
+                    <img src="${dish.image}" alt="${dish.name}" class="w-24 h-24 object-cover rounded-xl">
+                    <div class="ml-3 flex-1 flex flex-col justify-between py-1">
                         <div>
-                            <h3 class="font-bold text-base text-gray-800">${dish.name}</h3>
-                            <p class="text-xs text-gray-500 line-clamp-1 mt-0.5">${dish.desc || ''}</p>
+                            <div class="flex justify-between items-start">
+                                <h3 class="font-bold text-base text-gray-800">${dish.name}</h3>
+                                <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">${dish.category || '热菜'}</span>
+                            </div>
+                            <p class="text-xs text-gray-400 line-clamp-1 mt-1">${dish.desc || '美味家常菜'}</p>
                         </div>
-                        <div class="flex justify-between items-center mt-2">
-                            <span class="text-amber-600 font-bold">¥${dish.price}</span>
+                        <div class="flex justify-between items-center mt-3">
+                            <span class="text-amber-600 font-bold text-base">¥${dish.price}</span>
                             <div class="flex items-center space-x-2">
-                                <button onclick="updateCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">-</button>
+                                <button onclick="updateCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-sm">-</button>
                                 <span class="text-sm font-semibold w-5 text-center">${getCartCount(dish.id)}</span>
-                                <button onclick="updateCart(${dish.id}, 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center">+</button>
+                                <button onclick="updateCart(${dish.id}, 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center text-sm shadow-xs">+</button>
                             </div>
                         </div>
                     </div>
@@ -117,7 +158,7 @@
                     cart = cart.filter(i => i.id !== id);
                 }
             } else if (delta > 0) {
-                cart.push({ ...dish, count: 1 });
+                cart.push({ ...dish, count: 1, note: '' });
             }
             renderDishes();
             updateCartBar();
@@ -147,19 +188,26 @@
             const totalPrice = cart.reduce((sum, i) => sum + i.price * i.count, 0);
             modalTotal.innerText = `¥${totalPrice}`;
 
-            list.innerHTML = cart.map(item => `
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h4 class="font-medium text-sm">${item.name}</h4>
-                        <span class="text-xs text-gray-400">¥${item.price} / 份</span>
+            list.innerHTML = cart.map((item, index) => `
+                <div class="border-b pb-3 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold text-sm text-gray-800">${item.name}</h4>
+                            <span class="text-xs text-amber-600 font-semibold">¥${item.price} / 份</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button onclick="updateCart(${item.id}, -1)" class="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs">-</button>
+                            <span class="text-sm font-semibold">${item.count}</span>
+                            <button onclick="updateCart(${item.id}, 1)" class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">+</button>
+                        </div>
                     </div>
-                    <div class="flex items-center space-x-3">
-                        <button onclick="updateCart(${item.id}, -1)" class="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs">-</button>
-                        <span class="text-sm font-semibold">${item.count}</span>
-                        <button onclick="updateCart(${item.id}, 1)" class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">+</button>
-                    </div>
+                    <input type="text" placeholder="口味备注（如：少辣、不要香菜等）" value="${item.note || ''}" oninput="updateNote(${index}, this.value)" class="w-full text-xs bg-gray-50 border border-gray-100 rounded-lg px-3 py-1.5 outline-none focus:border-amber-500">
                 </div>
             `).join('');
+        }
+
+        function updateNote(index, value) {
+            cart[index].note = value;
         }
 
         function toggleCartModal() {
@@ -191,6 +239,7 @@
             renderDishes();
         }
 
+        // 初始化加载
         renderDishes();
     </script>
 </body>
