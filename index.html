@@ -141,10 +141,9 @@
         let currentUser = '';
         let selectedDay = '周一';
         let selectedCategory = '全部';
-        let cart = {}; 
+        let cart = {}; // 格式升级为支持配菜选择: { "dishId_subOption": count } 或者普通 dishId
         let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
-        // 🌟 菜品基础翻译词典（常用菜品直接匹配）
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
             "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
@@ -167,16 +166,10 @@
             "饮品/甜点": "Drink / Dessert"
         };
 
-        // 🌟 稳妥的自动翻译函数（本地优先，后台异步请求API，成功后自动静默刷新页面）
         function translateDishName(name) {
             if (currentLang !== 'en') return name; 
-            
-            // 1. 优先从本地词典读取
-            if (dishTranslationMap[name]) {
-                return dishTranslationMap[name];
-            }
+            if (dishTranslationMap[name]) return dishTranslationMap[name];
 
-            // 2. 本地没有时，先返回原中文名（防止页面卡顿），同时后台异步去获取英文并缓存
             fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(name)}&langpair=zh|en`)
                 .then(res => res.json())
                 .then(data => {
@@ -184,7 +177,6 @@
                         let translated = data.responseData.translatedText;
                         translated = translated.charAt(0).toUpperCase() + translated.slice(1);
                         dishTranslationMap[name] = translated;
-                        // 后台翻译成功后，如果当前是英文模式，自动重新渲染页面展现英文
                         if (currentLang === 'en') {
                             renderDishes();
                             updateCartBar();
@@ -196,7 +188,6 @@
             return name; 
         }
 
-        // 分类翻译函数
         function translateCategory(cat) {
             if (currentLang === 'en') {
                 return categoryTranslationMap[cat] || cat;
@@ -379,13 +370,37 @@
             if (selectedCategory !== '全部') dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
 
             container.innerHTML = dishes.map(dish => {
-                let count = cart[dish.id] || 0;
                 let displayName = translateDishName(dish.name);
                 let displayCat = translateCategory(dish.category || '热菜');
+                
+                // 检查该菜品是否有配菜子选项 (options 或 subOptions 数组)
+                let subOptions = dish.options || dish.subOptions || [];
+                
+                let cartKey = dish.id;
+                let selectedSub = '';
+                if (subOptions.length > 0) {
+                    let selectElId = `sub-select-${dish.id}`;
+                    let currentSelectedSub = window['temp_sub_' + dish.id] || subOptions[0];
+                    cartKey = `${dish.id}_${currentSelectedSub}`;
+                }
+
+                let count = cart[cartKey] || 0;
+
+                let subOptionsHtml = '';
+                if (subOptions.length > 0) {
+                    subOptionsHtml = `
+                        <div class="mt-1 flex items-center space-x-1">
+                            <span class="text-[10px] text-amber-800 font-semibold">${currentLang === 'zh' ? '配菜/口味:' : 'Option:'}</span>
+                            <select id="sub-select-${dish.id}" onchange="onSubOptionChange(${dish.id}, this.value)" class="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] rounded px-1.5 py-0.5 outline-none font-medium">
+                                ${subOptions.map(opt => `<option value="${opt}" ${((window['temp_sub_' + dish.id] \vert{}\vert{} subOptions[0]) === opt) ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+
                 return `
                     <div class="bg-white rounded-2xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
-                            <!-- 点击图片触发放大 -->
                             <img src="${dish.image}" onclick="openImageModal('${dish.image}', '${displayName}')" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0 cursor-pointer hover:opacity-95 transition" title="点击查看大图">
                             <div class="space-y-0.5 flex-1 min-w-0">
                                 <div class="flex items-center space-x-1.5">
@@ -394,33 +409,37 @@
                                 </div>
                                 <p class="text-[10px] text-gray-400 truncate">${dish.desc || ''}</p>
                                 <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
+                                ${subOptionsHtml}
                             </div>
                         </div>
                         <div class="flex items-center space-x-1.5 shrink-0 ml-2">
-                            ${count > 0 ? `<button onclick="changeCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="font-bold text-xs w-4 text-center">${count}</span>` : ''}
-                            <button onclick="changeCart(${dish.id}, 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold shadow-sm"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                            ${count > 0 ? `<button onclick="changeCart('${cartKey}', -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="font-bold text-xs w-4 text-center">${count}</span>` : ''}
+                            <button onclick="changeCart('${cartKey}', 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold shadow-sm"><i class="fa-solid fa-plus text-[10px]"></i></button>
                         </div>
                     </div>
                 `;
             }).join('');
         }
 
-        // 打开图片大图弹窗
+        function onSubOptionChange(dishId, value) {
+            window['temp_sub_' + dishId] = value;
+            renderDishes();
+        }
+
         function openImageModal(url, title) {
             document.getElementById('enlargedImg').src = url;
             document.getElementById('enlargedTitle').innerText = title || '';
             document.getElementById('imageModal').classList.remove('hidden');
         }
 
-        // 关闭图片大图弹窗
         function closeImageModal() {
             document.getElementById('imageModal').classList.add('hidden');
         }
 
-        function changeCart(dishId, delta) {
-            if (!cart[dishId]) cart[dishId] = 0;
-            cart[dishId] += delta;
-            if (cart[dishId] <= 0) delete cart[dishId];
+        function changeCart(cartKey, delta) {
+            if (!cart[cartKey]) cart[cartKey] = 0;
+            cart[cartKey] += delta;
+            if (cart[cartKey] <= 0) delete cart[cartKey];
             renderDishes();
             updateCartBar();
         }
@@ -431,13 +450,19 @@
             let dishMap = {};
             (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
 
-            for (let id in cart) {
-                let count = cart[id];
-                let dish = dishMap[id];
+            for (let cartKey in cart) {
+                let count = cart[cartKey];
+                // 解析 cartKey，格式可能是 dishId 或者 dishId_subOption
+                let parts = cartKey.split('_');
+                let dishId = parts[0];
+                let subOption = parts.length > 1 ? parts.slice(1).join('_') : '';
+                
+                let dish = dishMap[dishId];
                 if (dish) {
                     totalCount += count;
                     totalPrice += dish.price * count;
-                    previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(dish.name)} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
+                    let subText = subOption ? ` (${subOption})` : '';
+                    previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(dish.name)}${subText} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
                 }
             }
 
@@ -455,11 +480,22 @@
             let dishMap = {};
             (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
             let items = [], totalPrice = 0;
-            for (let id in cart) {
-                let dish = dishMap[id];
+            
+            for (let cartKey in cart) {
+                let parts = cartKey.split('_');
+                let dishId = parts[0];
+                let subOption = parts.length > 1 ? parts.slice(1).join('_') : '';
+                let dish = dishMap[dishId];
+                
                 if (dish) {
-                    items.push({ id: dish.id, name: dish.name, price: dish.price, count: cart[id] });
-                    totalPrice += dish.price * cart[id];
+                    items.push({ 
+                        id: dish.id, 
+                        name: dish.name, 
+                        subOption: subOption, 
+                        price: dish.price, 
+                        count: cart[cartKey] 
+                    });
+                    totalPrice += dish.price * cart[cartKey];
                 }
             }
             if (items.length === 0) return;
@@ -515,7 +551,10 @@
                                     <span class="text-[10px] px-2 py-0.5 rounded font-bold ${statusColor}">${statusText}</span>
                                 </div>
                                 <div class="space-y-0.5 text-xs text-gray-700">
-                                    ${order.items.map(i => `<div class="flex justify-between"><span>${translateDishName(i.name)} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`).join('')}
+                                    ${order.items.map(i => {
+                                        let subText = i.subOption ? ` (${i.subOption})` : '';
+                                        return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`;
+                                    }).join('')}
                                 </div>
                             </div>
                         `;
@@ -548,7 +587,10 @@
                             <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColor}">${statusText}</span>
                         </div>
                         <div class="space-y-0.5 text-xs text-gray-700">
-                            ${order.items.map(i => `<div class="flex justify-between"><span>${translateDishName(i.name)} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`).join('')}
+                            ${order.items.map(i => {
+                                let subText = i.subOption ? ` (${i.subOption})` : '';
+                                return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`;
+                            }).join('')}
                         </div>
                         <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
                             <span class="text-gray-400">${order.time || ''}</span>
