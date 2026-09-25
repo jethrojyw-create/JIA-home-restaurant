@@ -117,7 +117,8 @@
 
         async function fetchAllData() {
             try {
-                let res = await fetch(API_URL);
+                // 在请求链接后面加上一个不断变化的时间戳，防止 iPhone 缓存旧数据
+                let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
                 if (json) {
                     cloudData = json;
