@@ -202,28 +202,29 @@
             try {
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
-                if (json && json.dishes && json.dishes.length > 0) {
-                    cloudData = json;
-                    if (!cloudData.orders) cloudData.orders = [];
-                    if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
-                    if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
-                    
-                    // 💾 成功从云端拉取到几百个菜品后，立刻在浏览器本地做好备份！
-                    localStorage.setItem('family_dishes_backup', JSON.stringify(cloudData.dishes));
-                } else {
-                    // 🛡️ 云端如果被清空，自动从浏览器本地备份中读取您的几百个菜品！
-                    let localBackup = localStorage.getItem('family_dishes_backup');
-                    if (localBackup) {
-                        cloudData.dishes = JSON.parse(localBackup);
-                        console.log('检测到云端清空，已从本地备份恢复菜品！');
-                        await saveAllData(); // 自动恢复到云端
+                if (json) {
+                    // 保证所有字段安全
+                    cloudData.dishes = json.dishes || [];
+                    cloudData.orders = json.orders || [];
+                    cloudData.checkedIngredients = json.checkedIngredients || {};
+                    cloudData.manualIngredients = json.manualIngredients || [];
+
+                    // 如果云端有菜品，单独把菜品存入本地备份
+                    if (cloudData.dishes.length > 0) {
+                        localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                     }
                 }
             } catch (e) {
-                console.log('网络请求失败，尝试读取本地备份', e);
-                let localBackup = localStorage.getItem('family_dishes_backup');
+                console.log('网络同步失败', e);
+            }
+
+            // 🛡️ 只有当云端菜品真正为空时，才从本地【仅菜品备份】中恢复，绝对不影响 orders 订单！
+            if (cloudData.dishes.length === 0) {
+                let localBackup = localStorage.getItem('family_dishes_only_backup');
                 if (localBackup) {
                     cloudData.dishes = JSON.parse(localBackup);
+                    console.log('云端菜品为空，已自动从本地恢复菜品库（保留订单）！');
+                    await saveAllData();
                 }
             }
 
@@ -232,9 +233,8 @@
 
         async function saveAllData() {
             try {
-                // 保存时同样做好本地备份
                 if (cloudData.dishes && cloudData.dishes.length > 0) {
-                    localStorage.setItem('family_dishes_backup', JSON.stringify(cloudData.dishes));
+                    localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                 }
                 await fetch(API_URL, {
                     method: 'POST',
@@ -301,7 +301,7 @@
                     let dish = dishMap[orderItem.id];
                     if (dish && dish.ingredients) {
                         let times = orderItem.count;
-                        let rawParts = dish.ingredients.split(/[,，;；]/);
+                        let rawParts = dish.ingredients.split(/[,[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
