@@ -49,10 +49,9 @@
             </div>
         </div>
 
-        <!-- 选项卡切换 -->
+        <!-- 选项卡切换 (已移除当天订单汇总) -->
         <div class="flex bg-amber-100/60 p-1 rounded-xl text-xs font-bold overflow-x-auto no-scrollbar">
             <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 px-2 rounded-lg bg-white text-amber-900 shadow-xs transition whitespace-nowrap">周末采购清单</button>
-            <button onclick="switchTab('todaySummary')" id="tab-todaySummary" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">当天订单汇总</button>
             <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">库存管理</button>
             <button onclick="switchTab('orders')" id="tab-orders" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">点菜明细</button>
             <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">菜品库</button>
@@ -67,38 +66,6 @@
                 </h3>
                 <div id="summaryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 面板 1.5：当天订单汇总视图 (与设备日期自动同步) -->
-        <div id="panel-todaySummary" class="space-y-3 hidden">
-            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-3">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>当天订单汇总与一键结算</h3>
-                    <select id="selectedDaySelect" onchange="renderTodaySummary()" class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg px-2 py-1 outline-none font-bold">
-                        <option value="周一">周一</option>
-                        <option value="周二">周二</option>
-                        <option value="周三">周三</option>
-                        <option value="周四">周四</option>
-                        <option value="周五">周五</option>
-                        <option value="周六">周六</option>
-                        <option value="周日">周日</option>
-                    </select>
-                </div>
-
-                <!-- 当天菜品汇总容器 -->
-                <div id="todayDishesSummaryContainer" class="space-y-2 pt-1">
-                    <div class="text-center py-6 text-gray-400 text-xs">暂无当天菜品需求...</div>
-                </div>
-
-                <!-- 一键结算并清空当天订单按钮 -->
-                <div class="pt-2">
-                    <button onclick="settleAndClearTodayOrders()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-1.5">
-                        <i class="fa-solid fa-trash-can-arrow-up"></i>
-                        <span>一键扣除库存并清空当天订单</span>
-                    </button>
-                    <p class="text-[10px] text-gray-400 text-center mt-1.5">点击后将扣除对应库存，并**彻底清空**当天所有订单以接受新点菜</p>
                 </div>
             </div>
         </div>
@@ -151,6 +118,39 @@
                 </div>
             </div>
         </div>
+
+        <!-- 📌 独立固定在页面最下方的：当天订单汇总与一键清空模块 -->
+        <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 shadow-md space-y-3 mt-6">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-xs text-amber-900 flex items-center">
+                    <i class="fa-solid fa-calendar-day mr-1.5 text-amber-600 text-sm"></i>当天订单汇总与一键清空
+                </h3>
+                <select id="selectedDaySelect" onchange="renderTodaySummary()" class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg px-2.5 py-1 outline-none font-bold">
+                    <option value="周一">周一</option>
+                    <option value="周二">周二</option>
+                    <option value="周三">周三</option>
+                    <option value="周四">周四</option>
+                    <option value="周五">周五</option>
+                    <option value="周六">周六</option>
+                    <option value="周日">周日</option>
+                </select>
+            </div>
+
+            <!-- 当天菜品汇总容器 -->
+            <div id="todayDishesSummaryContainer" class="space-y-2 pt-1">
+                <div class="text-center py-6 text-gray-400 text-xs">暂无当天菜品需求...</div>
+            </div>
+
+            <!-- 一键结算并清空当天订单按钮 -->
+            <div class="pt-2">
+                <button onclick="settleAndClearTodayOrders()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-trash-can-arrow-up"></i>
+                    <span>一键扣除库存并清空当天订单</span>
+                </button>
+                <p class="text-[10px] text-gray-400 text-center mt-1.5">点击后将扣除对应库存，并**彻底清空**当天所有订单以接受新点菜</p>
+            </div>
+        </div>
+
     </main>
 
     <!-- 超市采购勾选大屏模式弹窗 -->
@@ -349,7 +349,7 @@
         // 根据设备的真实日期，自动初始化下拉框选项
         function initDeviceDateSelection() {
             const daysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-            const todayIndex = new Date().getDay(); // 0是周日，1是周一...
+            const todayIndex = new Date().getDay();
             const todayStr = daysMap[todayIndex];
             
             let selectElem = document.getElementById('selectedDaySelect');
@@ -360,7 +360,7 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            ['summary', 'todaySummary', 'inventory', 'orders', 'dishes'].forEach(t => {
+            ['summary', 'inventory', 'orders', 'dishes'].forEach(t => {
                 let btn = document.getElementById(`tab-${t}`);
                 let panel = document.getElementById(`panel-${t}`);
                 if (t === tab) {
@@ -377,10 +377,10 @@
         function renderAll() {
             renderStats();
             if (currentTab === 'summary') renderSummaryIngredients();
-            if (currentTab === 'todaySummary') renderTodaySummary();
             if (currentTab === 'inventory') renderInventory();
             if (currentTab === 'orders') renderOrders();
             if (currentTab === 'dishes') renderDishesAdmin();
+            renderTodaySummary(); // 独立模块实时渲染
             if (!document.getElementById('supermarketModal').classList.contains('hidden')) {
                 renderSupermarketList();
             }
@@ -577,7 +577,7 @@
             let orders = (cloudData.orders || []).filter(o => o.targetDay === selectedDay);
 
             if (orders.length === 0) {
-                container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">${selectedDay} 暂无点菜订单。</div>`;
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">${selectedDay} 暂无点菜订单。</div>`;
                 return;
             }
 
@@ -598,7 +598,7 @@
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
                         let times = item.count;
-                        let rawParts = dish.ingredients.split(/[,$,;；]/);
+                        let rawParts = dish.ingredients.split(/[,，;；]/); // 已修复逗号解析Bug
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
@@ -670,7 +670,6 @@
                 return;
             }
 
-            // 1. 统计当天订单消耗的所有原材料总量并扣除库存
             let ingredientConsumption = {};
             targetOrders.forEach(order => {
                 if (!order.items) return;
@@ -678,7 +677,7 @@
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
                         let times = item.count;
-                        let rawParts = dish.ingredients.split(/[,$,;；]/);
+                        let rawParts = dish.ingredients.split(/[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
@@ -712,8 +711,6 @@
             }
 
             cloudData.inventory = inventory;
-
-            // 2. 彻底过滤并清空当天订单
             cloudData.orders = orders.filter(o => o.targetDay !== selectedDay);
 
             updateOrdersStatusAutomatically();
