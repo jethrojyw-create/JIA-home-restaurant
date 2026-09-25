@@ -77,6 +77,7 @@
             <button onclick="filterCategory('凉菜')" id="cat-cold" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_cold">凉菜</button>
             <button onclick="filterCategory('主食/汤品')" id="cat-soup" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_soup">主食/汤品</button>
             <button onclick="filterCategory('饮品/甜点')" id="cat-drink" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_drink">饮品/甜点</button>
+            <button onclick="filterCategory('点心/面包')" id="cat-bakery" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_bakery">点心/面包</button>
         </div>
 
         <!-- 菜品列表容器 -->
@@ -189,7 +190,8 @@
             "热菜": "Hot Dish",
             "凉菜": "Cold Dish",
             "主食/汤品": "Staple / Soup",
-            "饮品/甜点": "Drink / Dessert"
+            "饮品/甜点": "Drink / Dessert",
+            "点心/面包": "Bakery / Bread"
         };
 
         function translateDishName(name) {
@@ -218,6 +220,7 @@
                 cat_cold: "凉菜",
                 cat_soup: "主食/汤品",
                 cat_drink: "饮品/甜点",
+                cat_bakery: "点心/面包",
                 loading_dishes: "正在加载云端菜单库...",
                 cart_selected: "已选",
                 cart_dishes: "样菜品",
@@ -240,6 +243,7 @@
                 cat_cold: "Cold Dishes",
                 cat_soup: "Staples/Soup",
                 cat_drink: "Drinks/Dessert",
+                cat_bakery: "Bakery/Bread",
                 loading_dishes: "Loading cloud menu...",
                 cart_selected: "Selected",
                 cart_dishes: "items",
@@ -368,7 +372,7 @@
 
         function filterCategory(cat) {
             selectedCategory = cat;
-            const catMap = { '全部': 'cat-all', '热菜': 'cat-hot', '凉菜': 'cat-cold', '主食/汤品': 'cat-soup', '饮品/甜点': 'cat-drink' };
+            const catMap = { '全部': 'cat-all', '热菜': 'cat-hot', '凉菜': 'cat-cold', '主食/汤品': 'cat-soup', '饮品/甜点': 'cat-drink', '点心/面包': 'cat-bakery' };
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.className = btn.id === catMap[cat] ? "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" : "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
             });
