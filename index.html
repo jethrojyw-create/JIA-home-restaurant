@@ -103,25 +103,25 @@
             try {
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
-                if (json && json.dishes && json.dishes.length > 0) {
-                    cloudData = json;
-                    if (!cloudData.orders) cloudData.orders = [];
-                    // 💾 成功从云端拉取菜单后，自动更新本地备份
-                    localStorage.setItem('family_dishes_backup', JSON.stringify(cloudData.dishes));
-                } else {
-                    // 🛡️ 如果云端被清空，自动从本地备份恢复
-                    let localBackup = localStorage.getItem('family_dishes_backup');
-                    if (localBackup) {
-                        cloudData.dishes = JSON.parse(localBackup);
-                        console.log('前台检测到云端清空，已从本地备份恢复！');
-                        await saveAllData();
+                if (json) {
+                    cloudData.dishes = json.dishes || [];
+                    cloudData.orders = json.orders || [];
+
+                    if (cloudData.dishes.length > 0) {
+                        localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                     }
                 }
             } catch (e) {
-                console.log('网络请求失败，尝试读取本地备份', e);
-                let localBackup = localStorage.getItem('family_dishes_backup');
+                console.log('网络请求失败', e);
+            }
+
+            // 🛡️ 仅备份菜品，绝不影响 orders 订单
+            if (cloudData.dishes.length === 0) {
+                let localBackup = localStorage.getItem('family_dishes_only_backup');
                 if (localBackup) {
                     cloudData.dishes = JSON.parse(localBackup);
+                    console.log('前台菜品库为空，已从本地备份恢复菜单！');
+                    await saveAllData();
                 }
             }
 
@@ -131,7 +131,7 @@
         async function saveAllData() {
             try {
                 if (cloudData.dishes && cloudData.dishes.length > 0) {
-                    localStorage.setItem('family_dishes_backup', JSON.stringify(cloudData.dishes));
+                    localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                 }
                 await fetch(API_URL, {
                     method: 'POST',
