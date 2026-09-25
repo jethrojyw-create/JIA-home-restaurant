@@ -56,7 +56,7 @@
             <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 rounded-lg text-gray-600 transition">菜品库与配料</button>
         </div>
 
-        <!-- 面板 1：周末采购原材料清单（智能合并同类项） -->
+        <!-- 面板 1：周末采购原材料清单 -->
         <div id="panel-summary" class="space-y-3">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
@@ -70,7 +70,7 @@
             </div>
         </div>
 
-        <!-- 面板 2：全家点菜明细（按日期归类） -->
+        <!-- 面板 2：全家点菜明细 -->
         <div id="panel-orders" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
@@ -83,7 +83,7 @@
             </div>
         </div>
 
-        <!-- 面板 3：菜品库管理（含原材料配置） -->
+        <!-- 面板 3：菜品库管理 -->
         <div id="panel-dishes" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
@@ -104,7 +104,7 @@
                 <i class="fa-solid fa-basket-shopping text-lg"></i>
                 <h2 class="font-bold text-sm">超市原材料采购核对模式</h2>
             </div>
-            <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">退出并保存</button>
+            <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">保存退出</button>
         </div>
         <div class="bg-emerald-50 px-4 py-2 text-[11px] text-emerald-800 border-b flex justify-between items-center">
             <span>在超市买一样勾选一样！</span>
@@ -115,7 +115,7 @@
         </div>
     </div>
 
-    <!-- 添加/编辑菜品弹窗（含原材料输入） -->
+    <!-- 添加/编辑菜品弹窗 -->
     <div id="dishModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 class="font-bold text-sm text-amber-900" id="dishModalTitle">添加新菜品</h3>
@@ -150,8 +150,8 @@
                 </div>
                 <div>
                     <label class="text-amber-800 font-bold block mb-1">所需原材料（用于超市合并采购）</label>
-                    <textarea id="dishIngredientsInput" rows="2" placeholder="例如：五花肉 500g, 冰糖 30g, 生抽 20ml" class="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500 text-xs"></textarea>
-                    <p class="text-[10px] text-gray-400 mt-0.5">提示：请用“名称 + 数字 + 单位”格式，系统会自动把相同原材料加总合并。</p>
+                    <textarea id="dishIngredientsInput" rows="2" placeholder="例如：五花肉 500g, 冰糖 30g" class="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500 text-xs"></textarea>
+                    <p class="text-[10px] text-gray-400 mt-0.5">提示：请用“名称 + 数字 + 单位”格式。</p>
                 </div>
             </div>
             <div class="flex space-x-2 pt-1">
@@ -163,7 +163,7 @@
 
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-        let cloudData = { dishes: [], orders: [] };
+        let cloudData = { dishes: [], orders: [], checkedIngredients: {} };
         let currentTab = 'summary';
 
         async function fetchAllData() {
@@ -174,6 +174,7 @@
                     cloudData = json;
                     if (!cloudData.dishes) cloudData.dishes = [];
                     if (!cloudData.orders) cloudData.orders = [];
+                    if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
                 }
             } catch (e) {
                 console.log('同步云端数据失败', e);
@@ -234,11 +235,9 @@
             document.getElementById('totalOrdersCount').innerText = (cloudData.orders || []).length;
         }
 
-        // 🌟 核心算法：自动汇总合并同类原材料并相加重量
         function getAggregatedIngredients() {
             let orders = cloudData.orders || [];
             let dishes = cloudData.dishes || [];
-
             let dishMap = {};
             dishes.forEach(d => { dishMap[d.id] = d; });
 
@@ -249,13 +248,12 @@
                 order.items.forEach(orderItem => {
                     let dish = dishMap[orderItem.id];
                     if (dish && dish.ingredients) {
-                        let times = orderItem.count; // 点了几份
+                        let times = orderItem.count;
                         let rawParts = dish.ingredients.split(/[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
                             
-                            // 匹配 “名称 + 数字 + 单位”
                             let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
                             if (match) {
                                 let ingName = match[1].trim();
@@ -264,13 +262,13 @@
                                 let key = `${ingName}_${unit}`;
 
                                 if (!ingredientSummary[key]) {
-                                    ingredientSummary[key] = { name: ingName, unit: unit, total: 0 };
+                                    ingredientSummary[key] = { key: key, name: ingName, unit: unit, total: 0 };
                                 }
                                 ingredientSummary[key].total += val * times;
                             } else {
                                 let key = `other_${part}`;
                                 if (!ingredientSummary[key]) {
-                                    ingredientSummary[key] = { name: part, unit: '', total: 0, isText: true };
+                                    ingredientSummary[key] = { key: key, name: part, unit: '', total: 0, isText: true };
                                 }
                                 ingredientSummary[key].total += times;
                             }
@@ -302,7 +300,6 @@
             }).join('');
         }
 
-        // 全家点菜明细（按日期归类）
         function renderOrders() {
             const container = document.getElementById('ordersListContainer');
             let orders = cloudData.orders || [];
@@ -376,7 +373,6 @@
             renderAll();
         }
 
-        // 菜品库管理
         function renderDishesAdmin() {
             const container = document.getElementById('dishesListContainer');
             let dishes = cloudData.dishes || [];
@@ -489,13 +485,14 @@
             renderAll();
         }
 
-        // 超市采购勾选模式
+        // 🌟 超市采购勾选模式（状态持久化修复）
         function openSupermarketMode() {
             document.getElementById('supermarketModal').classList.remove('hidden');
             renderSupermarketList();
         }
-        function closeSupermarketMode() {
+        async function closeSupermarketMode() {
             document.getElementById('supermarketModal').classList.add('hidden');
+            await saveAllData(); // 退出时自动保存勾选状态到云端
             renderAll();
         }
 
@@ -509,14 +506,16 @@
                 return;
             }
 
-            let checkedCount = list.filter(i => i.checked).length;
+            if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
+
+            let checkedCount = list.filter(item => cloudData.checkedIngredients[item.key]).length;
             document.getElementById('supermarketProgress').innerText = `已买: ${checkedCount} / ${list.length}`;
 
-            container.innerHTML = list.map((item, idx) => {
+            container.innerHTML = list.map(item => {
                 let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
-                let isChecked = item.checked || false;
+                let isChecked = !!cloudData.checkedIngredients[item.key];
                 return `
-                    <div onclick="toggleSupermarketItem(${idx})" class="bg-white p-3.5 rounded-2xl border ${isChecked ? 'border-emerald-300 bg-emerald-50/40 opacity-70 line-through' : 'border-gray-200 shadow-xs'} flex items-center justify-between cursor-pointer transition">
+                    <div onclick="toggleSupermarketItem('${item.key}')" class="bg-white p-3.5 rounded-2xl border ${isChecked ? 'border-emerald-300 bg-emerald-50/40 opacity-70 line-through' : 'border-gray-200 shadow-xs'} flex items-center justify-between cursor-pointer transition">
                         <div class="flex items-center space-x-3">
                             <div class="w-6 h-6 rounded-lg border-2 ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white flex items-center justify-center text-xs' : 'border-gray-300'}">
                                 ${isChecked ? '<i class="fa-solid fa-check"></i>' : ''}
@@ -531,13 +530,11 @@
             }).join('');
         }
 
-        function toggleSupermarketItem(idx) {
-            let list = getAggregatedIngredients();
-            if (list[idx]) {
-                // 在内存中记录勾选并刷新
-                list[idx].checked = !list[idx].checked;
-                renderSupermarketList();
-            }
+        async function toggleSupermarketItem(key) {
+            if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
+            cloudData.checkedIngredients[key] = !cloudData.checkedIngredients[key];
+            renderSupermarketList();
+            await saveAllData(); // 每次勾选实时保存到云端
         }
     </script>
 </body>
