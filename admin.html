@@ -200,7 +200,7 @@
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
 
-        let cloudData = { dishes: [], orders: [], checkedIngredients: {}, manualIngredients: [], ingredientOverrides: {} };
+        let cloudData = { dishes: [], orders: [], checkedIngredients: [], manualIngredients: [], ingredientOverrides: {} };
         let currentTab = 'summary';
 
         async function fetchAllData() {
@@ -297,8 +297,7 @@
             let checked = cloudData.checkedIngredients || {};
             let statusChanged = false;
 
-            // 辅助函数：解析原材料文本
-            function parseAndCheckIngredients(ingredientsStr, multiplier) {
+            function parseAndCheckIngredients(ingredientsStr) {
                 if (!ingredientsStr) return true;
                 let rawParts = ingredientsStr.split(/[,，;；]/);
                 let allChecked = true;
@@ -330,19 +329,17 @@
                         return;
                     }
 
-                    // 检查主料
-                    let mainChecked = parseAndCheckIngredients(dish.ingredients, orderItem.count);
+                    let mainChecked = parseAndCheckIngredients(dish.ingredients);
                     if (!mainChecked) {
                         allDishesPurchased = false;
                         return;
                     }
 
-                    // 检查勾选的配菜
                     if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
                         orderItem.selectedOptions.forEach(optName => {
                             let foundOpt = dish.options.find(o => o.name === optName);
                             if (foundOpt && foundOpt.ingredients) {
-                                let optChecked = parseAndCheckIngredients(foundOpt.ingredients, orderItem.count);
+                                let optChecked = parseAndCheckIngredients(foundOpt.ingredients);
                                 if (!optChecked) {
                                     allDishesPurchased = false;
                                 }
@@ -377,7 +374,7 @@
             }
         }
 
-        // 原材料聚合计算（包含主料与选中的配菜原材料）
+        // 修复后：聚合时同时包含了主料与选中配菜的原材料
         function getAggregatedIngredients() {
             let orders = cloudData.orders || [];
             let dishes = cloudData.dishes || [];
@@ -627,7 +624,6 @@
             document.getElementById('dishDescInput').value = dish.desc || '';
             document.getElementById('dishIngredientsInput').value = dish.ingredients || '';
             
-            // 将 options 对象数组转换为文本框可编辑的格式
             let optionsText = '';
             if (dish.options && dish.options.length > 0) {
                 optionsText = dish.options.map(o => `${o.name}:${o.price}:${o.ingredients || ''}`).join(', ');
@@ -656,7 +652,6 @@
                 return;
             }
 
-            // 解析配菜字符串转为对象数组
             let parsedOptions = [];
             if (optionsStr) {
                 let parts = optionsStr.split(/[,，]/);
