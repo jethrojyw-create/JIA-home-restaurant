@@ -86,11 +86,9 @@
     </div>
 
     <script>
-        // 核心修复：确保前台和后台读取完全相同的统一 LocalStorage 键名
         const STORAGE_KEY_DISHES = 'family_shared_dishes';
         const STORAGE_KEY_ORDERS = 'family_shared_orders';
 
-        // 默认初始化菜单
         const defaultDishes = [
             { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
             { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
@@ -99,7 +97,6 @@
             { id: 5, name: '鲜榨冰镇西瓜汁', price: 15, category: '饮品/甜点', image: 'https://images.unsplash.com/photo-1589734553456-25f73d4c4f9a?w=300', desc: '100%纯西瓜鲜榨' }
         ];
 
-        // 每次打开或刷新页面时，自动从公共缓存读取最新菜单
         function getDishes() {
             let dishes = JSON.parse(localStorage.getItem(STORAGE_KEY_DISHES));
             if (!dishes) {
@@ -125,7 +122,7 @@
         }
 
         function renderDishes() {
-            const dishes = getDishes(); // 实时获取最新菜品
+            const dishes = getDishes();
             const grid = document.getElementById('dishGrid');
             const filteredDishes = currentCategory === '全部' ? dishes : dishes.filter(d => d.category === currentCategory);
 
@@ -231,14 +228,18 @@
         }
 
         function submitOrder() {
-            if (cart.length === 0) return;
+            if (cart.length === 0) {
+                alert('请先选择要点购的菜品哦！');
+                return;
+            }
+
             const user = document.getElementById('userSelect').value;
-            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS)) || [];
+            let orders = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS)) || [];
             
             const newOrder = {
                 id: Date.now(),
                 user: user,
-                items: [...cart],
+                items: JSON.parse(JSON.stringify(cart)), // 深拷贝购物车数据，确保备注等内容正确保存
                 totalPrice: cart.reduce((sum, i) => sum + i.price * i.count, 0),
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 status: '待制作'
@@ -248,13 +249,14 @@
             localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(orders));
 
             alert(`下单成功！大厨 ${user} 已经收到您的点餐啦~`);
+            
+            // 清空购物车并关闭弹窗及悬浮栏
             cart = [];
-            toggleCartModal();
+            document.getElementById('cartModal').classList.add('hidden');
             updateCartBar();
             renderDishes();
         }
 
-        // 页面每次加载时渲染菜品
         renderDishes();
     </script>
 </body>
