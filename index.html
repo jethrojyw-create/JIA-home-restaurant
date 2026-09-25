@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家庭全周大采购 - 点菜端</title>
+    <title>家庭采购管理后台 (后台)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -16,25 +16,20 @@
     <!-- 顶部导航 -->
     <header class="bg-white shadow-xs sticky top-0 z-40 px-3 py-3 flex justify-between items-center w-full">
         <div class="flex items-center space-x-2">
-            <span class="text-xl">🍲</span>
+            <span class="text-xl">🛒</span>
             <div>
-                <h1 class="font-bold text-sm text-amber-900 leading-tight" data-i18n="app_title">家庭全周大采购</h1>
-                <p class="text-[10px] text-gray-400" id="currentLoginUserDisplay">点菜人: 请设置</p>
+                <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭采购管理后台</h1>
+                <p class="text-[10px] text-gray-400">实时统计与原材料汇总</p>
             </div>
         </div>
         <div class="flex items-center space-x-1.5">
-            <button onclick="toggleLang()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded-lg transition" id="langBtn">EN</button>
-            <button onclick="openFamilyOrdersModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold px-2 py-1.5 rounded-lg transition flex items-center space-x-1 border border-amber-200">
-                <i class="fa-solid fa-users text-amber-600"></i>
-                <span data-i18n="nav_family_menu">全家菜单</span>
+            <button onclick="openSupermarketMode()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1 shadow-xs">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span>去超市买菜</span>
             </button>
-            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-2 py-1.5 rounded-lg transition flex items-center space-x-1">
-                <i class="fa-solid fa-receipt"></i>
-                <span data-i18n="nav_my_orders">我的</span>
-            </button>
-            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-2 py-1.5 rounded-lg transition flex items-center space-x-1">
-                <i class="fa-solid fa-user-pen"></i>
-                <span id="switchUserBtnText">切换</span>
+            <button onclick="openAddDishModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition flex items-center space-x-1 shadow-xs">
+                <i class="fa-solid fa-plus"></i>
+                <span>加菜</span>
             </button>
         </div>
     </header>
@@ -42,265 +37,233 @@
     <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-4">
         
-        <!-- 星期选择横幅 -->
-        <div class="bg-white rounded-2xl p-3.5 border border-amber-200/60 shadow-xs space-y-2.5">
-            <div class="flex justify-between items-center">
-                <h2 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i><span data-i18n="select_day_title">选择预定哪一天的饭菜</span></h2>
-                <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold">周一</span>
+        <!-- 顶部统计看板 -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white p-3.5 rounded-2xl border border-amber-200/60 shadow-xs space-y-1">
+                <p class="text-[11px] text-gray-400">本周预估总花费</p>
+                <p class="text-lg font-extrabold text-amber-800">¥<span id="totalBudget">0</span></p>
             </div>
-            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="dayTabs">
-                <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" data-day="周一" data-i18n-day="monday">周一</button>
-                <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周二" data-i18n-day="tuesday">周二</button>
-                <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周三" data-i18n-day="wednesday">周三</button>
-                <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周四" data-i18n-day="thursday">周四</button>
-                <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周五" data-i18n-day="friday">周五</button>
-                <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周六" data-i18n-day="saturday">周六</button>
-                <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周日" data-i18n-day="sunday">周日</button>
+            <div class="bg-white p-3.5 rounded-2xl border border-amber-200/60 shadow-xs space-y-1">
+                <p class="text-[11px] text-gray-400">菜品总数 / 预定单数</p>
+                <p class="text-lg font-extrabold text-amber-900"><span id="totalDishesCount">0</span> 样 / <span id="totalOrdersCount">0</span> 单</p>
             </div>
         </div>
 
-        <!-- 菜单分类导航 -->
-        <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs">
-            <button onclick="filterCategory('全部')" id="cat-all" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" data-i18n="cat_all">全部菜品</button>
-            <button onclick="filterCategory('热菜')" id="cat-hot" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_hot">热菜</button>
-            <button onclick="filterCategory('凉菜')" id="cat-cold" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_cold">凉菜</button>
-            <button onclick="filterCategory('主食/汤品')" id="cat-soup" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_soup">主食/汤品</button>
-            <button onclick="filterCategory('饮品/甜点')" id="cat-drink" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_drink">饮品/甜点</button>
+        <!-- 选项卡切换 -->
+        <div class="flex bg-amber-100/60 p-1 rounded-xl text-xs font-bold">
+            <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 rounded-lg bg-white text-amber-900 shadow-xs transition">周末采购原材料清单</button>
+            <button onclick="switchTab('orders')" id="tab-orders" class="flex-1 py-2 rounded-lg text-gray-600 transition">全家点菜明细</button>
+            <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 rounded-lg text-gray-600 transition">菜品库与配料</button>
         </div>
 
-        <!-- 菜品列表容器 -->
-        <div id="dishListContainer" class="grid grid-cols-1 gap-3">
-            <div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border" data-i18n="loading_dishes">正在加载云端菜单库...</div>
+        <!-- 面板 1：周末采购原材料清单 -->
+        <div id="panel-summary" class="space-y-3">
+            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
+                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
+                    <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>周末一站式采购原材料汇总</span>
+                    <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">自动合计重量</span>
+                </h3>
+                <p class="text-[11px] text-gray-400">根据全家人点单的菜品、配料及所选配菜，自动合并相同原材料的总数：</p>
+                <div id="summaryListContainer" class="space-y-2 pt-1">
+                    <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面板 2：全家点菜明细 -->
+        <div id="panel-orders" class="space-y-3 hidden">
+            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
+                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
+                    <span><i class="fa-solid fa-receipt mr-1 text-amber-600"></i>家庭成员预定记录（按天归类）</span>
+                    <span class="text-[10px] text-gray-400">原料买齐会自动变已采购</span>
+                </h3>
+                <div id="ordersListContainer" class="space-y-3 pt-1">
+                    <div class="text-center py-10 text-gray-400 text-xs">暂无点菜订单...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面板 3：菜品库管理 -->
+        <div id="panel-dishes" class="space-y-3 hidden">
+            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
+                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
+                    <span><i class="fa-solid fa-utensils mr-1 text-amber-600"></i>可选菜单库与原材料设置</span>
+                    <button onclick="openAddDishModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>添加新菜</button>
+                </h3>
+                <div id="dishesListContainer" class="grid grid-cols-1 gap-2.5 pt-1">
+                    <div class="text-center py-10 text-gray-400 text-xs">加载菜品库中...</div>
+                </div>
+            </div>
         </div>
     </main>
 
-    <!-- 底部已选购物车悬浮栏 -->
-    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-3.5 z-30 w-full hidden shadow-2xl rounded-t-2xl">
-        <div class="w-full max-w-lg mx-auto space-y-2.5">
-            <div class="flex justify-between items-center border-b pb-2">
-                <div>
-                    <span class="font-bold text-xs text-amber-900"><span data-i18n="cart_selected">已选</span> <span id="cartCount" class="text-amber-600">0</span> <span data-i18n="cart_dishes">样菜品</span></span>
-                    <span class="text-[11px] text-gray-400 ml-1.5">(<span id="cartDayLabel">周一</span>)</span>
-                </div>
-                <span class="font-extrabold text-amber-800 text-sm"><span data-i18n="cart_est">预估</span>: ¥<span id="cartTotalPrice">0</span></span>
+    <!-- 超市采购勾选大屏模式弹窗 -->
+    <div id="supermarketModal" class="fixed inset-0 bg-white z-50 flex flex-col hidden">
+        <div class="bg-emerald-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-basket-shopping text-lg"></i>
+                <h2 class="font-bold text-sm">超市原材料采购核对模式</h2>
             </div>
-            <div id="cartItemsPreview" class="max-h-28 overflow-y-auto space-y-1 text-xs text-gray-600"></div>
-            <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-1">
-                <i class="fa-solid fa-paper-plane"></i>
-                <span data-i18n="btn_submit_order">确认提交给采购员</span>
+            <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">保存退出</button>
+        </div>
+        <div class="bg-emerald-50 px-4 py-2 text-[11px] text-emerald-800 border-b flex justify-between items-center">
+            <span>买一样勾选一样，支持现场修改或删除！</span>
+            <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
+        </div>
+        <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full"></div>
+        <div class="p-3 bg-white border-t max-w-lg mx-auto w-full">
+            <button onclick="openAddManualShoppingItem()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">
+                <i class="fa-solid fa-plus mr-1"></i> 在超市临时加买一项
             </button>
         </div>
     </div>
 
-    <!-- 查看全家人点菜面板 -->
-    <div id="familyOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-3">
-        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
-            <div class="flex justify-between items-center pb-2 border-b">
-                <h3 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-users mr-1.5 text-amber-600"></i><span data-i18n="family_modal_title">全家人本周点菜一览</span></h3>
-                <button onclick="closeFamilyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
+    <!-- 临时加购 / 修改弹窗 -->
+    <div id="manualItemModal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
+            <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">修改采购项目</h3>
+            <input type="hidden" id="editManualKey">
+            <input type="hidden" id="editItemType">
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="text-gray-500 block mb-1">原材料名称</label>
+                    <input type="text" id="manualNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">数量</label>
+                        <input type="number" id="manualTotalInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">单位</label>
+                        <input type="text" id="manualUnitInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                    </div>
+                </div>
             </div>
-            <div id="familyOrdersListContainer" class="space-y-3 pt-1"></div>
-            <button onclick="closeFamilyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl font-medium text-xs transition" data-i18n="btn_close">关闭</button>
-        </div>
-    </div>
-
-    <!-- 我的预定单弹窗 -->
-    <div id="myOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-3">
-        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
-            <div class="flex justify-between items-center pb-2 border-b">
-                <h3 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-receipt mr-1.5"></i><span data-i18n="my_modal_title">我的全部预定单记录</span></h3>
-                <button onclick="closeMyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
+            <div class="flex space-x-2 pt-1">
+                <button onclick="closeManualModal()" class="flex-1 bg-gray-100 py-2 rounded-xl text-xs font-bold">取消</button>
+                <button onclick="saveManualItem()" class="flex-1 bg-emerald-600 text-white py-2 rounded-xl text-xs font-bold">保存</button>
             </div>
-            <div id="myOrdersListContainer" class="space-y-2.5 pt-1"></div>
-            <button onclick="closeMyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl font-medium text-xs transition" data-i18n="btn_close">关闭</button>
         </div>
     </div>
 
-    <!-- 用户设置弹窗 -->
-    <div id="userModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 hidden">
-        <div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl space-y-3.5 text-center">
-            <div class="text-3xl">👋</div>
-            <h3 class="font-bold text-base text-amber-900" data-i18n="user_modal_title">欢迎点菜！请先告诉我们你是谁</h3>
-            <input type="text" id="userNameInput" placeholder="爸爸 / 妈妈 / Dad / Mom" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-xs outline-none focus:border-amber-500 font-semibold">
-            <button onclick="saveUser()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs" data-i18n="btn_start_ordering">开始点菜</button>
-        </div>
-    </div>
-
-    <!-- 🖼️ 图片放大预览弹窗 -->
-    <div id="imageModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-4" onclick="closeImageModal()">
-        <div class="relative max-w-lg w-full flex flex-col items-center" onclick="event.stopPropagation()">
-            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300 transition"><i class="fa-solid fa-xmark"></i></button>
-            <img id="enlargedImg" src="" class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl object-contain bg-black/20">
-            <p id="enlargedTitle" class="text-white text-sm mt-3 font-bold tracking-wide"></p>
+    <!-- 添加/编辑菜品弹窗 -->
+    <div id="dishModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-sm text-amber-900" id="dishModalTitle">添加新菜品</h3>
+            <input type="hidden" id="editDishId">
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="text-gray-500 block mb-1">菜品名称</label>
+                    <input type="text" id="dishNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">分类</label>
+                        <select id="dishCategoryInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                            <option value="热菜">热菜</option>
+                            <option value="凉菜">凉菜</option>
+                            <option value="主食/汤品">主食/汤品</option>
+                            <option value="饮品/甜点">饮品/甜点</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">价格 (¥)</label>
+                        <input type="number" id="dishPriceInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                    </div>
+                </div>
+                <div>
+                    <label class="text-gray-500 block mb-1">图片链接 (URL)</label>
+                    <input type="text" id="dishImageInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="text-gray-500 block mb-1">简介</label>
+                    <input type="text" id="dishDescInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                </div>
+                <div>
+                    <label class="text-amber-800 font-bold block mb-1">所需原材料</label>
+                    <textarea id="dishIngredientsInput" rows="2" class="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="例如：五花肉 500g, 冰糖 30g"></textarea>
+                </div>
+                <div>
+                    <label class="text-emerald-800 font-bold block mb-1">可选配菜 / 附加选项 (可选)</label>
+                    <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:价格:原材料 (多项用逗号隔开)&#10;例如：加辣:0:小米椒 10g, 加肉条:5:瘦肉 100g"></textarea>
+                    <p class="text-[10px] text-gray-400 mt-1">注：如果配菜不增加菜品总价，价格填 0；如果包含额外原材料，点单时选中会自动计入采购汇总。</p>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-1">
+                <button onclick="closeDishModal()" class="flex-1 bg-gray-100 py-2 rounded-xl text-xs font-bold">取消</button>
+                <button onclick="saveDish()" class="flex-1 bg-amber-600 text-white py-2 rounded-xl text-xs font-bold">保存</button>
+            </div>
         </div>
     </div>
 
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-        let cloudData = { dishes: [], orders: [] };
-        let currentUser = '';
-        let selectedDay = '周一';
-        let selectedCategory = '全部';
-        let cart = {}; // 格式升级为支持配菜选择: { "dishId_subOption": count } 或者普通 dishId
-        let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
-        const dishTranslationMap = {
-            "红烧肉": "Braised Pork Belly",
-            "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
-            "宫保鸡丁": "Kung Pao Chicken",
-            "麻婆豆腐": "Mapo Tofu",
-            "水煮肉片": "Boiled Pork Slices",
-            "清蒸鱼": "Steamed Fish",
-            "拍黄瓜": "Smashed Cucumbers",
-            "酸辣汤": "Hot and Sour Soup",
-            "蛋炒饭": "Egg Fried Rice",
-            "红烧排骨": "Braised Pork Ribs",
-            "糖醋里脊": "Sweet and Sour Pork",
-            "地三鲜": "Stir-fried Potatoes, Eggplants and Peppers"
-        };
+        let cloudData = { dishes: [], orders: [], checkedIngredients: {}, manualIngredients: [], ingredientOverrides: {} };
+        let currentTab = 'summary';
 
-        const categoryTranslationMap = {
-            "热菜": "Hot Dish",
-            "凉菜": "Cold Dish",
-            "主食/汤品": "Staple / Soup",
-            "饮品/甜点": "Drink / Dessert"
-        };
-
-        function translateDishName(name) {
-            if (currentLang !== 'en') return name; 
-            if (dishTranslationMap[name]) return dishTranslationMap[name];
-
-            fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(name)}&langpair=zh|en`)
-                .then(res => res.json())
-                .then(data => {
-                    if (data && data.responseData && data.responseData.translatedText) {
-                        let translated = data.responseData.translatedText;
-                        translated = translated.charAt(0).toUpperCase() + translated.slice(1);
-                        dishTranslationMap[name] = translated;
-                        if (currentLang === 'en') {
-                            renderDishes();
-                            updateCartBar();
-                        }
-                    }
-                })
-                .catch(e => console.log('自动翻译失败', e));
-
-            return name; 
-        }
-
-        function translateCategory(cat) {
-            if (currentLang === 'en') {
-                return categoryTranslationMap[cat] || cat;
-            }
-            return cat;
-        }
-
-        const i18nText = {
-            zh: {
-                app_title: "家庭全周大采购",
-                nav_family_menu: "全家菜单",
-                nav_my_orders: "我的",
-                select_day_title: "选择预定哪一天的饭菜",
-                cat_all: "全部菜品",
-                cat_hot: "热菜",
-                cat_cold: "凉菜",
-                cat_soup: "主食/汤品",
-                cat_drink: "饮品/甜点",
-                loading_dishes: "正在加载云端菜单库...",
-                cart_selected: "已选",
-                cart_dishes: "样菜品",
-                cart_est: "预估",
-                btn_submit_order: "确认提交给采购员",
-                family_modal_title: "全家人本周点菜一览",
-                my_modal_title: "我的全部预定单记录",
-                btn_close: "关闭",
-                user_modal_title: "欢迎点菜！请先告诉我们你是谁",
-                btn_start_ordering: "开始点菜",
-                monday: "周一", tuesday: "周二", wednesday: "周三", thursday: "周四", friday: "周五", saturday: "周六", sunday: "周日",
-                status_pending: "待采购", status_purchased: "已采购", status_completed: "已完成"
+        // 默认初始化菜品兜底数据（防止云端或本地无数据时出现空白）
+        const DEFAULT_DISHES = [
+            {
+                id: 1,
+                name: "外婆红烧肉",
+                category: "热菜",
+                price: 68,
+                image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c",
+                desc: "肥而不腻，软糯香甜",
+                ingredients: "五花肉 500g, 冰糖 30g, 生抽 20ml",
+                options: [{ name: "加辣", price: 0, ingredients: "小米椒 10g" }]
             },
-            en: {
-                app_title: "Weekly Family Grocery",
-                nav_family_menu: "Family Menu",
-                nav_my_orders: "My Orders",
-                select_day_title: "Select day for meal booking",
-                cat_all: "All Dishes",
-                cat_hot: "Hot Dishes",
-                cat_cold: "Cold Dishes",
-                cat_soup: "Staples/Soup",
-                cat_drink: "Drinks/Dessert",
-                loading_dishes: "Loading cloud menu...",
-                cart_selected: "Selected",
-                cart_dishes: "items",
-                cart_est: "Est",
-                btn_submit_order: "Submit to Buyer",
-                family_modal_title: "Family Weekly Orders Overview",
-                my_modal_title: "My Booking History",
-                btn_close: "Close",
-                user_modal_title: "Welcome! Please tell us who you are",
-                btn_start_ordering: "Start Ordering",
-                monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday",
-                status_pending: "Pending", status_purchased: "Purchased", status_completed: "Completed"
+            {
+                id: 2,
+                name: "番茄炒鸡蛋",
+                category: "热菜",
+                price: 28,
+                image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c",
+                desc: "家常经典美味",
+                ingredients: "西红柿 3个, 鸡蛋 4个",
+                options: [{ name: "多加葱", price: 0, ingredients: "小葱 20g" }]
             }
-        };
-
-        function t(key) {
-            return (i18nText[currentLang] && i18nText[currentLang][key]) || i18nText['zh'][key] || key;
-        }
-
-        function toggleLang() {
-            currentLang = currentLang === 'zh' ? 'en' : 'zh';
-            localStorage.setItem('family_order_lang', currentLang);
-            updateUIStrings();
-            renderDishes();
-            updateCartBar();
-            if(!document.getElementById('myOrdersModal').classList.contains('hidden')) renderMyOrdersList();
-            if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) renderFamilyOrdersList();
-        }
-
-        function updateUIStrings() {
-            document.getElementById('langBtn').innerText = currentLang === 'zh' ? 'EN' : '中';
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                let key = el.getAttribute('data-i18n');
-                el.innerText = t(key);
-            });
-            document.querySelectorAll('.day-btn').forEach(btn => {
-                let dayKey = btn.getAttribute('data-i18n-day');
-                btn.innerText = t(dayKey);
-            });
-            document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(selectedDay));
-        }
-
-        function getDayKeyMap(day) {
-            const map = { '周一': 'monday', '周二': 'tuesday', '周三': 'wednesday', '周四': 'thursday', '周五': 'friday', '周六': 'saturday', '周日': 'sunday' };
-            return map[day] || 'monday';
-        }
+        ];
 
         async function fetchAllData() {
             try {
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
-                if (json) {
-                    cloudData.dishes = json.dishes || [];
+                if (json && json.dishes && json.dishes.length > 0) {
+                    cloudData.dishes = json.dishes;
                     cloudData.orders = json.orders || [];
-                    if (cloudData.dishes.length > 0) {
-                        localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
-                    }
-                }
-            } catch (e) { console.log(e); }
+                    cloudData.checkedIngredients = json.checkedIngredients || {};
+                    cloudData.manualIngredients = json.manualIngredients || [];
+                    cloudData.ingredientOverrides = json.ingredientOverrides || {};
 
-            if (cloudData.dishes.length === 0) {
+                    localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
+                }
+            } catch (e) {
+                console.log('网络同步失败，尝试读取本地缓存', e);
+            }
+
+            // 如果云端没数据，尝试读取本地备份
+            if (!cloudData.dishes || cloudData.dishes.length === 0) {
                 let localBackup = localStorage.getItem('family_dishes_only_backup');
                 if (localBackup) {
-                    cloudData.dishes = JSON.parse(localBackup);
-                    await saveAllData();
+                    try {
+                        cloudData.dishes = JSON.parse(localBackup);
+                    } catch (err) {
+                        cloudData.dishes = [];
+                    }
                 }
             }
 
-            renderDishes();
-            updateCartBar();
-            if(!document.getElementById('myOrdersModal').classList.contains('hidden')) renderMyOrdersList();
-            if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) renderFamilyOrdersList();
+            // 如果本地和云端都没有，则使用默认兜底菜品并保存
+            if (!cloudData.dishes || cloudData.dishes.length === 0) {
+                cloudData.dishes = DEFAULT_DISHES;
+                await saveAllData();
+            }
+
+            updateOrdersStatusAutomatically();
+            renderAll();
         }
 
         async function saveAllData() {
@@ -313,292 +276,608 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cloudData)
                 });
-            } catch (e) { alert('云端同步失败！'); }
+            } catch (e) {
+                console.log('云端同步失败，已保留本地缓存');
+            }
         }
 
         window.onload = function() {
-            updateUIStrings();
-            let savedUser = localStorage.getItem('family_order_user');
-            if (savedUser) {
-                currentUser = savedUser;
-                document.getElementById('currentLoginUserDisplay').innerText = (currentLang === 'zh' ? '点菜人: ' : 'User: ') + currentUser;
-                document.getElementById('switchUserBtnText').innerText = currentUser;
-                document.getElementById('userModal').classList.add('hidden');
-            } else {
-                openUserModal();
-            }
             fetchAllData();
             setInterval(fetchAllData, 8000);
         }
 
-        function openUserModal() {
-            document.getElementById('userNameInput').value = currentUser || '';
-            document.getElementById('userModal').classList.remove('hidden');
-        }
-
-        function saveUser() {
-            let name = document.getElementById('userNameInput').value.trim();
-            if (!name) return alert('请输入名字！');
-            currentUser = name;
-            localStorage.setItem('family_order_user', currentUser);
-            document.getElementById('currentLoginUserDisplay').innerText = (currentLang === 'zh' ? '点菜人: ' : 'User: ') + currentUser;
-            document.getElementById('switchUserBtnText').innerText = currentUser;
-            document.getElementById('userModal').classList.add('hidden');
-        }
-
-        function selectDay(day) {
-            selectedDay = day;
-            document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(day));
-            document.querySelectorAll('.day-btn').forEach(btn => {
-                btn.className = btn.getAttribute('data-day') === day ? "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" : "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+        function switchTab(tab) {
+            currentTab = tab;
+            ['summary', 'orders', 'dishes'].forEach(t => {
+                let btn = document.getElementById(`tab-${t}`);
+                let panel = document.getElementById(`panel-${t}`);
+                if (t === tab) {
+                    btn.className = "flex-1 py-2 rounded-lg bg-white text-amber-900 shadow-xs transition";
+                    panel.classList.remove('hidden');
+                } else {
+                    btn.className = "flex-1 py-2 rounded-lg text-gray-600 transition";
+                    panel.classList.add('hidden');
+                }
             });
-            renderDishes();
+            renderAll();
         }
 
-        function filterCategory(cat) {
-            selectedCategory = cat;
-            const catMap = { '全部': 'cat-all', '热菜': 'cat-hot', '凉菜': 'cat-cold', '主食/汤品': 'cat-soup', '饮品/甜点': 'cat-drink' };
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.className = btn.id === catMap[cat] ? "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" : "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+        function renderAll() {
+            renderStats();
+            if (currentTab === 'summary') renderSummaryIngredients();
+            if (currentTab === 'orders') renderOrders();
+            if (currentTab === 'dishes') renderDishesAdmin();
+            if (!document.getElementById('supermarketModal').classList.contains('hidden')) {
+                renderSupermarketList();
+            }
+        }
+
+        function renderStats() {
+            let totalBudget = 0;
+            (cloudData.orders || []).forEach(o => {
+                totalBudget += (o.totalPrice || 0);
             });
-            renderDishes();
+            document.getElementById('totalBudget').innerText = totalBudget;
+            document.getElementById('totalDishesCount').innerText = (cloudData.dishes || []).length;
+            document.getElementById('totalOrdersCount').innerText = (cloudData.orders || []).length;
         }
 
-        function renderDishes() {
-            const container = document.getElementById('dishListContainer');
+        function updateOrdersStatusAutomatically() {
             let dishes = cloudData.dishes || [];
-            if (selectedCategory !== '全部') dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
+            let dishMap = {};
+            dishes.forEach(d => { dishMap[d.id] = d; });
+            let checked = cloudData.checkedIngredients || {};
+            let statusChanged = false;
 
-            container.innerHTML = dishes.map(dish => {
-                let displayName = translateDishName(dish.name);
-                let displayCat = translateCategory(dish.category || '热菜');
-                
-                // 检查该菜品是否有配菜子选项 (options 或 subOptions 数组)
-                let subOptions = dish.options || dish.subOptions || [];
-                
-                let cartKey = dish.id;
-                let selectedSub = '';
-                if (subOptions.length > 0) {
-                    let selectElId = `sub-select-${dish.id}`;
-                    let currentSelectedSub = window['temp_sub_' + dish.id] || subOptions[0];
-                    cartKey = `${dish.id}_${currentSelectedSub}`;
+            function parseAndCheckIngredients(ingredientsStr) {
+                if (!ingredientsStr) return true;
+                let rawParts = ingredientsStr.split(/[,，;；]/);
+                let allChecked = true;
+                rawParts.forEach(part => {
+                    part = part.trim();
+                    if (!part) return;
+                    let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                    let key = match ? `auto_${match[1].trim()}_${match[3] ? match[3].trim() : ''}` : `auto_other_${part}`;
+                    if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key] && cloudData.ingredientOverrides[key].deleted) {
+                        return;
+                    }
+                    if (!checked[key]) {
+                        allChecked = false;
+                    }
+                });
+                return rawParts.length === 0 ? true : allChecked;
+            }
+
+            (cloudData.orders || []).forEach(order => {
+                if (!order.items || order.items.length === 0) return;
+                if (order.status === '已完成') return;
+
+                let allDishesPurchased = true;
+
+                order.items.forEach(orderItem => {
+                    let dish = dishMap[orderItem.id];
+                    if (!dish) {
+                        allDishesPurchased = false;
+                        return;
+                    }
+
+                    let mainChecked = parseAndCheckIngredients(dish.ingredients);
+                    if (!mainChecked) {
+                        allDishesPurchased = false;
+                        return;
+                    }
+
+                    if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
+                        orderItem.selectedOptions.forEach(optName => {
+                            let foundOpt = dish.options.find(o => o.name === optName);
+                            if (foundOpt && foundOpt.ingredients) {
+                                let optChecked = parseAndCheckIngredients(foundOpt.ingredients);
+                                if (!optChecked) {
+                                    allDishesPurchased = false;
+                                }
+                            }
+                        });
+                    }
+                });
+
+                let targetStatus = allDishesPurchased ? '已采购' : '待采购';
+                if (!order.status) order.status = '待采购';
+
+                if (order.status !== '已完成' && order.status !== targetStatus) {
+                    order.status = targetStatus;
+                    statusChanged = true;
                 }
+            });
 
-                let count = cart[cartKey] || 0;
+            if (statusChanged) {
+                saveAllData();
+            }
+        }
 
-                let subOptionsHtml = '';
-                if (subOptions.length > 0) {
-                    subOptionsHtml = `
-                        <div class="mt-1 flex items-center space-x-1">
-                            <span class="text-[10px] text-amber-800 font-semibold">${currentLang === 'zh' ? '配菜/口味:' : 'Option:'}</span>
-                            <select id="sub-select-${dish.id}" onchange="onSubOptionChange(${dish.id}, this.value)" class="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] rounded px-1.5 py-0.5 outline-none font-medium">
-                                ${subOptions.map(opt => `<option value="${opt}" ${((window['temp_sub_' + dish.id] \vert{}\vert{} subOptions[0]) === opt) ? 'selected' : ''}>${opt}</option>`).join('')}
-                            </select>
-                        </div>
-                    `;
+        async function cycleOrderStatus(orderId) {
+            await fetchAllData();
+            let order = (cloudData.orders || []).find(o => o.id === orderId);
+            if (order) {
+                if (!order.status || order.status === '待采购') order.status = '已采购';
+                else if (order.status === '已采购') order.status = '已完成';
+                else order.status = '待采购';
+                await saveAllData();
+                renderAll();
+            }
+        }
+
+        function getAggregatedIngredients() {
+            let orders = cloudData.orders || [];
+            let dishes = cloudData.dishes || [];
+            let dishMap = {};
+            dishes.forEach(d => { dishMap[d.id] = d; });
+
+            let ingredientSummary = {};
+
+            function addIngredientsToSummary(ingredientsStr, times) {
+                if (!ingredientsStr) return;
+                let rawParts = ingredientsStr.split(/[,，;；]/);
+                rawParts.forEach(part => {
+                    part = part.trim();
+                    if (!part) return;
+                    let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                    if (match) {
+                        let ingName = match[1].trim();
+                        let val = parseFloat(match[2]);
+                        let unit = match[3] ? match[3].trim() : '';
+                        let key = `auto_${ingName}_${unit}`;
+
+                        if (!ingredientSummary[key]) {
+                            ingredientSummary[key] = { key: key, name: ingName, unit: unit, total: 0 };
+                        }
+                        ingredientSummary[key].total += val * times;
+                    } else {
+                        let key = `auto_other_${part}`;
+                        if (!ingredientSummary[key]) {
+                            ingredientSummary[key] = { key: key, name: part, unit: '', total: 0, isText: true };
+                        }
+                        ingredientSummary[key].total += times;
+                    }
+                });
+            }
+
+            orders.forEach(order => {
+                if (!order.items) return;
+                order.items.forEach(orderItem => {
+                    let dish = dishMap[orderItem.id];
+                    if (dish) {
+                        let times = orderItem.count;
+                        if (dish.ingredients) {
+                            addIngredientsToSummary(dish.ingredients, times);
+                        }
+                        if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
+                            orderItem.selectedOptions.forEach(optName => {
+                                let foundOpt = dish.options.find(o => o.name === optName);
+                                if (foundOpt && foundOpt.ingredients) {
+                                    addIngredientsToSummary(foundOpt.ingredients, times);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            let list = [];
+            for (let key in ingredientSummary) {
+                let item = ingredientSummary[key];
+                if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key]) {
+                    let override = cloudData.ingredientOverrides[key];
+                    if (override.deleted) continue;
+                    list.push({
+                        key: key,
+                        name: override.name,
+                        unit: override.unit,
+                        total: override.total,
+                        isAuto: true
+                    });
+                } else {
+                    list.push(item);
                 }
+            }
 
+            if (cloudData.manualIngredients) {
+                cloudData.manualIngredients.forEach(m => {
+                    list.push({
+                        key: m.key,
+                        name: m.name,
+                        unit: m.unit,
+                        total: m.total,
+                        isManual: true
+                    });
+                });
+            }
+
+            return list;
+        }
+
+        function renderSummaryIngredients() {
+            const container = document.getElementById('summaryListContainer');
+            let list = getAggregatedIngredients();
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">还没有家人点菜，或者点选的菜品未配置“原材料”~</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(item => {
+                let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
                 return `
-                    <div class="bg-white rounded-2xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
-                        <div class="flex items-center space-x-3 flex-1 min-w-0">
-                            <img src="${dish.image}" onclick="openImageModal('${dish.image}', '${displayName}')" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0 cursor-pointer hover:opacity-95 transition" title="点击查看大图">
-                            <div class="space-y-0.5 flex-1 min-w-0">
-                                <div class="flex items-center space-x-1.5">
-                                    <h3 class="font-bold text-xs text-gray-800 truncate">${displayName}</h3>
-                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded font-medium shrink-0">${displayCat}</span>
-                                </div>
-                                <p class="text-[10px] text-gray-400 truncate">${dish.desc || ''}</p>
-                                <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
-                                ${subOptionsHtml}
-                            </div>
-                        </div>
-                        <div class="flex items-center space-x-1.5 shrink-0 ml-2">
-                            ${count > 0 ? `<button onclick="changeCart('${cartKey}', -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="font-bold text-xs w-4 text-center">${count}</span>` : ''}
-                            <button onclick="changeCart('${cartKey}', 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold shadow-sm"><i class="fa-solid fa-plus text-[10px]"></i></button>
-                        </div>
+                    <div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
+                        <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
+                        <span class="bg-amber-600 text-white font-bold px-2.5 py-0.5 rounded text-xs">${displayTotal}${item.unit || '份'}</span>
                     </div>
                 `;
             }).join('');
         }
 
-        function onSubOptionChange(dishId, value) {
-            window['temp_sub_' + dishId] = value;
-            renderDishes();
-        }
+        function renderOrders() {
+            const container = document.getElementById('ordersListContainer');
+            let orders = cloudData.orders || [];
 
-        function openImageModal(url, title) {
-            document.getElementById('enlargedImg').src = url;
-            document.getElementById('enlargedTitle').innerText = title || '';
-            document.getElementById('imageModal').classList.remove('hidden');
-        }
-
-        function closeImageModal() {
-            document.getElementById('imageModal').classList.add('hidden');
-        }
-
-        function changeCart(cartKey, delta) {
-            if (!cart[cartKey]) cart[cartKey] = 0;
-            cart[cartKey] += delta;
-            if (cart[cartKey] <= 0) delete cart[cartKey];
-            renderDishes();
-            updateCartBar();
-        }
-
-        function updateCartBar() {
-            const bar = document.getElementById('cartBar');
-            let totalCount = 0, totalPrice = 0, previewHtml = '';
-            let dishMap = {};
-            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
-
-            for (let cartKey in cart) {
-                let count = cart[cartKey];
-                // 解析 cartKey，格式可能是 dishId 或者 dishId_subOption
-                let parts = cartKey.split('_');
-                let dishId = parts[0];
-                let subOption = parts.length > 1 ? parts.slice(1).join('_') : '';
-                
-                let dish = dishMap[dishId];
-                if (dish) {
-                    totalCount += count;
-                    totalPrice += dish.price * count;
-                    let subText = subOption ? ` (${subOption})` : '';
-                    previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(dish.name)}${subText} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
-                }
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">暂无点菜订单...</div>`;
+                return;
             }
-
-            if (totalCount > 0) {
-                bar.classList.remove('hidden');
-                document.getElementById('cartCount').innerText = totalCount;
-                document.getElementById('cartTotalPrice').innerText = totalPrice;
-                document.getElementById('cartDayLabel').innerText = t(getDayKeyMap(selectedDay));
-                document.getElementById('cartItemsPreview').innerHTML = previewHtml;
-            } else { bar.classList.add('hidden'); }
-        }
-
-        async function submitOrder() {
-            if (!currentUser) return openUserModal();
-            let dishMap = {};
-            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
-            let items = [], totalPrice = 0;
-            
-            for (let cartKey in cart) {
-                let parts = cartKey.split('_');
-                let dishId = parts[0];
-                let subOption = parts.length > 1 ? parts.slice(1).join('_') : '';
-                let dish = dishMap[dishId];
-                
-                if (dish) {
-                    items.push({ 
-                        id: dish.id, 
-                        name: dish.name, 
-                        subOption: subOption, 
-                        price: dish.price, 
-                        count: cart[cartKey] 
-                    });
-                    totalPrice += dish.price * cart[cartKey];
-                }
-            }
-            if (items.length === 0) return;
-
-            const newOrder = {
-                id: Date.now(),
-                user: currentUser,
-                targetDay: selectedDay,
-                items: items,
-                totalPrice: totalPrice,
-                status: '待采购', 
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            };
-
-            await fetchAllData();
-            if (!cloudData.orders) cloudData.orders = [];
-            cloudData.orders.unshift(newOrder);
-            await saveAllData();
-            cart = {};
-            updateCartBar();
-            renderDishes();
-            alert((currentLang === 'zh' ? '成功为【' : 'Successfully booked for ') + t(getDayKeyMap(selectedDay)) + (currentLang === 'zh' ? '】提交订单！' : '!'));
-        }
-
-        function openFamilyOrdersModal() {
-            document.getElementById('familyOrdersModal').classList.remove('hidden');
-            renderFamilyOrdersList();
-        }
-        function closeFamilyOrdersModal() { document.getElementById('familyOrdersModal').classList.add('hidden'); }
-
-        function renderFamilyOrdersList() {
-            const container = document.getElementById('familyOrdersListContainer');
-            const orders = cloudData.orders || [];
-            if (orders.length === 0) return container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">${currentLang === 'zh' ? '暂无点单记录~' : 'No orders yet~'}</div>`;
 
             const daysOrder = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
             let groupedByDay = {};
             daysOrder.forEach(d => { groupedByDay[d] = []; });
-            orders.forEach(o => { if (groupedByDay[o.targetDay || '周一']) groupedByDay[o.targetDay || '周一'].push(o); });
+
+            orders.forEach(o => {
+                let day = o.targetDay || '周一';
+                if (!groupedByDay[day]) groupedByDay[day] = [];
+                groupedByDay[day].push(o);
+            });
 
             let html = '';
             daysOrder.forEach(day => {
                 let dayOrders = groupedByDay[day];
                 if (dayOrders.length > 0) {
-                    html += `<div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl space-y-2"><div class="flex justify-between items-center border-b border-amber-200 pb-1.5"><span class="font-bold text-xs text-amber-900">${t(getDayKeyMap(day))}</span><span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">${dayOrders.length} ${currentLang === 'zh' ? '单' : 'orders'}</span></div><div class="space-y-2">`;
+                    html += `
+                        <div class="bg-amber-50/60 border border-amber-200 p-3 rounded-2xl space-y-2">
+                            <div class="flex justify-between items-center border-b border-amber-200 pb-1.5">
+                                <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>${day} 点菜明细</span>
+                                <span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">${dayOrders.length} 笔</span>
+                            </div>
+                            <div class="space-y-2 pt-0.5">
+                    `;
+
                     dayOrders.forEach(order => {
-                        let statusText = order.status === '已完成' ? t('status_completed') : (order.status === '已采购' ? t('status_purchased') : t('status_pending'));
-                        let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800');
+                        let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800');
                         html += `
-                            <div class="bg-white p-2.5 rounded-lg border space-y-1 shadow-xs">
-                                <div class="flex justify-between items-center text-[11px]">
-                                    <span class="bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">${order.user}</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded font-bold ${statusColor}">${statusText}</span>
+                            <div class="bg-white p-2.5 rounded-xl border border-amber-100 space-y-1.5 shadow-xs">
+                                <div class="flex justify-between items-center text-[11px] border-b border-gray-100 pb-1">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="bg-amber-600 text-white text-[10px] px-1.5 py-0.2 rounded font-bold">${order.user || '某位家人'}</span>
+                                        <span class="text-[10px] text-gray-400">${order.time || ''}</span>
+                                    </div>
+                                    <div class="space-x-1">
+                                        <button onclick="cycleOrderStatus(${order.id})" class="text-[10px] px-2 py-0.5 rounded-full font-bold transition shadow-xs ${statusColor}" title="点击切换状态">${order.status || '待采购'} 🔄</button>
+                                        <button onclick="deleteAdminOrder(${order.id})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
                                 </div>
-                                <div class="space-y-0.5 text-xs text-gray-700">
-                                    ${order.items.map(i => {
-                                        let subText = i.subOption ? ` (${i.subOption})` : '';
-                                        return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`;
-                                    }).join('')}
+                                <div class="space-y-1 text-xs text-gray-700">
+                                    ${(order.items || []).map(i => `
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <span class="font-bold">${i.name} x${i.count}</span>${i.selectedOptions && i.selectedOptions.length > 0 ? `<div class="text-[10px] text-emerald-700">配菜: ${i.selectedOptions.join(', ')}</div>` : ''}
+                                            </div>
+                                            <span class="font-bold">¥${i.itemTotalPrice || (i.price * i.count)}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="flex justify-between items-center pt-1 border-t border-gray-100 text-[10px]">
+                                    <span class="text-gray-400">单笔小计</span>
+                                    <span class="font-bold text-amber-900">¥${order.totalPrice}</span>
                                 </div>
                             </div>
                         `;
                     });
+
                     html += `</div></div>`;
                 }
             });
+
             container.innerHTML = html;
         }
 
-        function openMyOrdersModal() {
-            if (!currentUser) return openUserModal();
-            document.getElementById('myOrdersModal').classList.remove('hidden');
-            renderMyOrdersList();
+        async function deleteAdminOrder(orderId) {
+            if (!confirm('确定要删除该笔家庭订单吗？')) return;
+            await fetchAllData();
+            cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
+            await saveAllData();
+            renderAll();
         }
-        function closeMyOrdersModal() { document.getElementById('myOrdersModal').classList.add('hidden'); }
 
-        function renderMyOrdersList() {
-            const container = document.getElementById('myOrdersListContainer');
-            const myOrders = (cloudData.orders || []).filter(o => o.user === currentUser);
-            if (myOrders.length === 0) return container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">${currentLang === 'zh' ? '你还没有提交过预定单~' : 'You have no bookings~'}</div>`;
+        function renderDishesAdmin() {
+            const container = document.getElementById('dishesListContainer');
+            let dishes = cloudData.dishes || [];
 
-            container.innerHTML = myOrders.map(order => {
-                let statusText = order.status === '已完成' ? t('status_completed') : (order.status === '已采购' ? t('status_purchased') : t('status_pending'));
-                let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800');
+            if (dishes.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">菜品库为空，请点击右上角添加新菜~</div>`;
+                return;
+            }
+
+            container.innerHTML = dishes.map(dish => {
+                let optionsDesc = dish.options && dish.options.length > 0 ? dish.options.map(o => `${o.name}(+¥${o.price})`).join(', ') : '无';
                 return `
-                    <div class="bg-amber-50/50 border border-amber-200 p-3 rounded-xl space-y-1.5">
-                        <div class="flex justify-between items-center border-b border-amber-100 pb-1">
-                            <span class="font-bold text-xs text-amber-900">${t(getDayKeyMap(order.targetDay || '周一'))}</span>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColor}">${statusText}</span>
+                    <div class="bg-white rounded-xl border p-2.5 flex items-center justify-between shadow-xs">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <img src="${dish.image}" class="w-12 h-12 object-cover rounded-lg shrink-0">
+                            <div class="space-y-0.5 flex-1 min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <h4 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h4>
+                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1 py-0.2 rounded">${dish.category || '热菜'}</span>
+                                </div>
+                                <p class="text-[10px] text-amber-600 font-bold">¥${dish.price}</p>
+                                <p class="text-[10px] text-gray-400 truncate">配料: ${dish.ingredients || '未填写'}</p>
+                                <p class="text-[10px] text-emerald-600 truncate">配菜选项: ${optionsDesc}</p>
+                            </div>
                         </div>
-                        <div class="space-y-0.5 text-xs text-gray-700">
-                            ${order.items.map(i => {
-                                let subText = i.subOption ? ` (${i.subOption})` : '';
-                                return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`;
-                            }).join('')}
-                        </div>
-                        <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
-                            <span class="text-gray-400">${order.time || ''}</span>
-                            <span class="font-bold text-amber-900">${currentLang === 'zh' ? '总计' : 'Total'}: ¥${order.totalPrice}</span>
+                        <div class="flex items-center space-x-1 shrink-0 ml-2">
+                            <button onclick="openEditDishModal(${dish.id})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-lg text-xs"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteDish(${dish.id})" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        function openAddDishModal() {
+            document.getElementById('dishModalTitle').innerText = '添加新菜品与配料';
+            document.getElementById('editDishId').value = '';
+            document.getElementById('dishNameInput').value = '';
+            document.getElementById('dishCategoryInput').value = '热菜';
+            document.getElementById('dishPriceInput').value = '';
+            document.getElementById('dishImageInput').value = '';
+            document.getElementById('dishDescInput').value = '';
+            document.getElementById('dishIngredientsInput').value = '';
+            document.getElementById('dishOptionsInput').value = '';
+            document.getElementById('dishModal').classList.remove('hidden');
+        }
+
+        function openEditDishModal(dishId) {
+            let dish = (cloudData.dishes || []).find(d => d.id === dishId);
+            if (!dish) return;
+            document.getElementById('dishModalTitle').innerText = '编辑菜品与配料';
+            document.getElementById('editDishId').value = dish.id;
+            document.getElementById('dishNameInput').value = dish.name;
+            document.getElementById('dishCategoryInput').value = dish.category || '热菜';
+            document.getElementById('dishPriceInput').value = dish.price;
+            document.getElementById('dishImageInput').value = dish.image;
+            document.getElementById('dishDescInput').value = dish.desc || '';
+            document.getElementById('dishIngredientsInput').value = dish.ingredients || '';
+            
+            let optionsText = '';
+            if (dish.options && dish.options.length > 0) {
+                optionsText = dish.options.map(o => `${o.name}:${o.price}:${o.ingredients || ''}`).join(', ');
+            }
+            document.getElementById('dishOptionsInput').value = optionsText;
+
+            document.getElementById('dishModal').classList.remove('hidden');
+        }
+
+        function closeDishModal() {
+            document.getElementById('dishModal').classList.add('hidden');
+        }
+
+        async function saveDish() {
+            let id = document.getElementById('editDishId').value;
+            let name = document.getElementById('dishNameInput').value.trim();
+            let category = document.getElementById('dishCategoryInput').value;
+            let price = parseFloat(document.getElementById('dishPriceInput').value);
+            let image = document.getElementById('dishImageInput').value.trim();
+            let desc = document.getElementById('dishDescInput').value.trim();
+            let ingredients = document.getElementById('dishIngredientsInput').value.trim();
+            let optionsStr = document.getElementById('dishOptionsInput').value.trim();
+
+            if (!name || isNaN(price)) {
+                alert('请填写完整的菜品名称和有效价格！');
+                return;
+            }
+
+            let parsedOptions = [];
+            if (optionsStr) {
+                let parts = optionsStr.split(/[,，]/);
+                parts.forEach(p => {
+                    p = p.trim();
+                    if (!p) return;
+                    let sub = p.split(':');
+                    if (sub.length >= 2) {
+                        parsedOptions.push({
+                            name: sub[0].trim(),
+                            price: parseFloat(sub[1]) || 0,
+                            ingredients: sub[2] ? sub[2].trim() : ''
+                        });
+                    }
+                });
+            }
+
+            await fetchAllData();
+            if (!cloudData.dishes) cloudData.dishes = [];
+
+            if (id) {
+                let dish = cloudData.dishes.find(d => d.id == id);
+                if (dish) {
+                    dish.name = name;
+                    dish.category = category;
+                    dish.price = price;
+                    dish.image = image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
+                    dish.desc = desc;
+                    dish.ingredients = ingredients;
+                    dish.options = parsedOptions;
+                }
+            } else {
+                cloudData.dishes.push({
+                    id: Date.now(),
+                    name: name,
+                    category: category,
+                    price: price,
+                    image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
+                    desc: desc,
+                    ingredients: ingredients,
+                    options: parsedOptions
+                });
+            }
+
+            await saveAllData();
+            closeDishModal();
+            renderAll();
+        }
+
+        async function deleteDish(dishId) {
+            if (!confirm('确定要从菜单库删除这个菜品吗？')) return;
+            await fetchAllData();
+            cloudData.dishes = (cloudData.dishes || []).filter(d => d.id !== dishId);
+            await saveAllData();
+            renderAll();
+        }
+
+        function openSupermarketMode() {
+            document.getElementById('supermarketModal').classList.remove('hidden');
+            renderSupermarketList();
+        }
+        async function closeSupermarketMode() {
+            document.getElementById('supermarketModal').classList.add('hidden');
+            await saveAllData();
+            renderAll();
+        }
+
+        function renderSupermarketList() {
+            const container = document.getElementById('supermarketListContainer');
+            let list = getAggregatedIngredients();
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-xs">当前没有采购原材料任务~</div>`;
+                document.getElementById('supermarketProgress').innerText = `已买: 0 / 0`;
+                return;
+            }
+
+            if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
+
+            let checkedCount = list.filter(item => cloudData.checkedIngredients[item.key]).length;
+            document.getElementById('supermarketProgress').innerText = `已买: ${checkedCount} / ${list.length}`;
+
+            container.innerHTML = list.map(item => {
+                let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
+                let isChecked = !!cloudData.checkedIngredients[item.key];
+                return `
+                    <div class="bg-white p-3 rounded-2xl border ${isChecked ? 'border-emerald-300 bg-emerald-50/40 opacity-70 line-through' : 'border-gray-200 shadow-xs'} flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer" onclick="toggleSupermarketItem('${item.key}')">
+                            <div class="w-6 h-6 rounded-lg border-2 shrink-0 ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white flex items-center justify-center text-xs' : 'border-gray-300'}">
+                                ${isChecked ? '<i class="fa-solid fa-check"></i>' : ''}
+                            </div>
+                            <div class="min-w-0">
+                                <h4 class="font-bold text-sm text-gray-800 truncate">${item.name}</h4>
+                                <p class="text-xs text-amber-700 font-semibold">需采购: ${displayTotal}${item.unit || '份'}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1 shrink-0 ml-2">
+                            <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}', ${item.isManual ? 'true' : 'false'})" class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-xs" title="修改"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteSupermarketItem('${item.key}', ${item.isManual ? 'true' : 'false'})" class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs" title="删除"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function toggleSupermarketItem(key) {
+            if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
+            cloudData.checkedIngredients[key] = !cloudData.checkedIngredients[key];
+            
+            updateOrdersStatusAutomatically();
+            renderSupermarketList();
+            await saveAllData();
+        }
+
+        function openAddManualShoppingItem() {
+            document.getElementById('manualModalTitle').innerText = '临时加买原材料';
+            document.getElementById('editManualKey').value = '';
+            document.getElementById('editItemType').value = 'manual';
+            document.getElementById('manualNameInput').value = '';
+            document.getElementById('manualTotalInput').value = '';
+            document.getElementById('manualUnitInput').value = '';
+            document.getElementById('manualItemModal').classList.remove('hidden');
+        }
+
+        function openEditManualItem(key, name = '', total = '', unit = '', isManual = false) {
+            document.getElementById('manualModalTitle').innerText = '修改采购项目';
+            document.getElementById('editManualKey').value = key;
+            document.getElementById('editItemType').value = isManual ? 'manual' : 'auto';
+            document.getElementById('manualNameInput').value = name;
+            document.getElementById('manualTotalInput').value = total;
+            document.getElementById('manualUnitInput').value = unit;
+            document.getElementById('manualItemModal').classList.remove('hidden');
+        }
+
+        function closeManualModal() {
+            document.getElementById('manualItemModal').classList.add('hidden');
+        }
+
+        async function saveManualItem() {
+            let key = document.getElementById('editManualKey').value;
+            let itemType = document.getElementById('editItemType').value;
+            let name = document.getElementById('manualNameInput').value.trim();
+            let total = parseFloat(document.getElementById('manualTotalInput').value);
+            let unit = document.getElementById('manualUnitInput').value.trim();
+
+            if (!name || isNaN(total)) {
+                alert('请填写完整的名称和有效数量！');
+                return;
+            }
+
+            await fetchAllData();
+
+            if (itemType === 'manual') {
+                if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
+                let item = cloudData.manualIngredients.find(m => m.key === key);
+                if (item) {
+                    item.name = name;
+                    item.total = total;
+                    item.unit = unit;
+                } else {
+                    let newKey = 'manual_' + Date.now();
+                    cloudData.manualIngredients.push({ key: newKey, name: name, total: total, unit: unit });
+                }
+            } else {
+                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
+                cloudData.ingredientOverrides[key] = { name: name, unit: unit, total: total, deleted: false };
+            }
+
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            closeManualModal();
+            renderSupermarketList();
+            renderSummaryIngredients();
+        }
+
+        async function deleteSupermarketItem(key, isManual = false) {
+            if (!confirm('确定要从采购清单中删除这一项吗？')) return;
+            await fetchAllData();
+
+            if (isManual) {
+                if (cloudData.manualIngredients) {
+                    cloudData.manualIngredients = cloudData.manualIngredients.filter(m => m.key !== key);
+                }
+            } else {
+                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
+                if (!cloudData.ingredientOverrides[key]) cloudData.ingredientOverrides[key] = {};
+                cloudData.ingredientOverrides[key].deleted = true;
+            }
+
+            if (cloudData.checkedIngredients) {
+                delete cloudData.checkedIngredients[key];
+            }
+
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            renderSupermarketList();
+            renderSummaryIngredients();
         }
     </script>
 </body>
