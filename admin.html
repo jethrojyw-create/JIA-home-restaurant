@@ -50,11 +50,12 @@
         </div>
 
         <!-- 选项卡切换 -->
-        <div class="flex bg-amber-100/60 p-1 rounded-xl text-xs font-bold">
-            <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 rounded-lg bg-white text-amber-900 shadow-xs transition">周末采购清单</button>
-            <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-2 rounded-lg text-gray-600 transition">库存管理</button>
-            <button onclick="switchTab('orders')" id="tab-orders" class="flex-1 py-2 rounded-lg text-gray-600 transition">点菜明细</button>
-            <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 rounded-lg text-gray-600 transition">菜品库</button>
+        <div class="flex bg-amber-100/60 p-1 rounded-xl text-xs font-bold overflow-x-auto no-scrollbar">
+            <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 px-2 rounded-lg bg-white text-amber-900 shadow-xs transition whitespace-nowrap">周末采购清单</button>
+            <button onclick="switchTab('todaySummary')" id="tab-todaySummary" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">当天订单汇总</button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">库存管理</button>
+            <button onclick="switchTab('orders')" id="tab-orders" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">点菜明细</button>
+            <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">菜品库</button>
         </div>
 
         <!-- 面板 1：周末采购原材料清单 -->
@@ -66,6 +67,38 @@
                 </h3>
                 <div id="summaryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面板 1.5：当天订单汇总视图 (新增) -->
+        <div id="panel-todaySummary" class="space-y-3 hidden">
+            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-3">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>当天订单汇总与一键处理</h3>
+                    <select id="selectedDaySelect" onchange="renderTodaySummary()" class="bg-amber-50 border border-amber-200 text-amber-900 text-xs rounded-lg px-2 py-1 outline-none font-bold">
+                        <option value="周一">周一</option>
+                        <option value="周二">周二</option>
+                        <option value="周三">周三</option>
+                        <option value="周四">周四</option>
+                        <option value="周五">周五</option>
+                        <option value="周六">周六</option>
+                        <option value="周日">周日</option>
+                    </select>
+                </div>
+
+                <!-- 当天菜品汇总容器 -->
+                <div id="todayDishesSummaryContainer" class="space-y-2 pt-1">
+                    <div class="text-center py-6 text-gray-400 text-xs">暂无当天菜品需求...</div>
+                </div>
+
+                <!-- 一键完成订单并扣除库存按钮 -->
+                <div class="pt-2">
+                    <button onclick="completeTodayOrdersAndDeductStock()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-1.5">
+                        <i class="fa-solid fa-check-double"></i>
+                        <span>一键完成当天订单并扣除库存</span>
+                    </button>
+                    <p class="text-[10px] text-gray-400 text-center mt-1.5">点击后将把当天订单设为“已完成”，并自动从现有库存中扣除对应原材料用量</p>
                 </div>
             </div>
         </div>
@@ -314,14 +347,14 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            ['summary', 'inventory', 'orders', 'dishes'].forEach(t => {
+            ['summary', 'todaySummary', 'inventory', 'orders', 'dishes'].forEach(t => {
                 let btn = document.getElementById(`tab-${t}`);
                 let panel = document.getElementById(`panel-${t}`);
                 if (t === tab) {
-                    btn.className = "flex-1 py-2 rounded-lg bg-white text-amber-900 shadow-xs transition";
+                    btn.className = "flex-1 py-2 px-2 rounded-lg bg-white text-amber-900 shadow-xs transition whitespace-nowrap";
                     panel.classList.remove('hidden');
                 } else {
-                    btn.className = "flex-1 py-2 rounded-lg text-gray-600 transition";
+                    btn.className = "flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap";
                     panel.classList.add('hidden');
                 }
             });
@@ -331,6 +364,7 @@
         function renderAll() {
             renderStats();
             if (currentTab === 'summary') renderSummaryIngredients();
+            if (currentTab === 'todaySummary') renderTodaySummary();
             if (currentTab === 'inventory') renderInventory();
             if (currentTab === 'orders') renderOrders();
             if (currentTab === 'dishes') renderDishesAdmin();
@@ -525,6 +559,163 @@
                 `;
             }).join('');
         }
+
+        // ================= 当天订单汇总与一键完成扣库存核心逻辑 =================
+        function renderTodaySummary() {
+            const container = document.getElementById('todayDishesSummaryContainer');
+            const selectedDay = document.getElementById('selectedDaySelect').value;
+            let orders = (cloudData.orders || []).filter(o => o.targetDay === selectedDay);
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">${selectedDay} 暂无点菜订单。</div>`;
+                return;
+            }
+
+            // 汇总当天各个菜品的总需求量及所需原材料
+            let dishCounts = {};
+            let ingredientSummary = {};
+            let dishesMap = {};
+            (cloudData.dishes || []).forEach(d => { dishesMap[d.id] = d; });
+
+            orders.forEach(order => {
+                if (!order.items) return;
+                order.items.forEach(item => {
+                    let key = item.id;
+                    if (!dishCounts[key]) {
+                        dishCounts[key] = { name: item.name, count: 0, price: item.price };
+                    }
+                    dishCounts[key].count += item.count;
+
+                    // 计算原材料
+                    let dish = dishesMap[item.id];
+                    if (dish && dish.ingredients) {
+                        let times = item.count;
+                        let rawParts = dish.ingredients.split(/[,$,;；]/);
+                        rawParts.forEach(part => {
+                            part = part.trim();
+                            if (!part) return;
+                            let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                            if (match) {
+                                let ingName = match[1].trim();
+                                let val = parseFloat(match[2]);
+                                let unit = match[3] ? match[3].trim() : '';
+                                let ingKey = `auto_${ingName}_${unit}`;
+                                if (!ingredientSummary[ingKey]) {
+                                    ingredientSummary[ingKey] = { name: ingName, unit: unit, total: 0 };
+                                }
+                                ingredientSummary[ingKey].total += val * times;
+                            }
+                        });
+                    }
+                });
+            });
+
+            let html = `<div class="space-y-3">`;
+            html += `<div class="text-[11px] font-bold text-gray-500 border-b pb-1">📅 ${selectedDay} 菜品汇总统计：</div>`;
+            html += `<div class="grid grid-cols-1 gap-1.5">`;
+            for (let k in dishCounts) {
+                let d = dishCounts[k];
+                html += `
+                    <div class="bg-amber-50/50 border border-amber-100 p-2 rounded-xl flex justify-between items-center text-xs">
+                        <span class="font-bold text-amber-900">${d.name}</span>
+                        <span class="bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold text-[11px]">x ${d.count} 份</span>
+                    </div>
+                `;
+            }
+            html += `</div>`;
+
+            // 原材料消耗预览
+            html += `<div class="text-[11px] font-bold text-gray-500 border-b pt-2 pb-1">🥩 预计消耗原材料明细：</div>`;
+            html += `<div class="grid grid-cols-1 gap-1.5">`;
+            let hasIng = false;
+            for (let k in ingredientSummary) {
+                hasIng = true;
+                let ing = ingredientSummary[k];
+                let valStr = Number.isInteger(ing.total) ? ing.total : ing.total.toFixed(1);
+                html += `
+                    <div class="bg-gray-50 border p-2 rounded-xl flex justify-between items-center text-xs">
+                        <span class="text-gray-700">${ing.name}</span>
+                        <span class="font-bold text-emerald-700">${valStr} ${ing.unit || '份'}</span>
+                    </div>
+                `;
+            }
+            if (!hasIng) {
+                html += `<div class="text-gray-400 text-xs py-1">暂无解析出相关原材料配方。</div>`;
+            }
+            html += `</div></div>`;
+
+            container.innerHTML = html;
+        }
+
+        async function completeTodayOrdersAndDeductStock() {
+            const selectedDay = document.getElementById('selectedDaySelect').value;
+            if (!confirm(`确定要一键完成【${selectedDay}】的所有订单，并自动从库存中扣除相应原材料吗？`)) return;
+
+            await fetchAllData();
+            let orders = cloudData.orders || [];
+            let inventory = cloudData.inventory || {};
+            let dishesMap = {};
+            (cloudData.dishes || []).forEach(d => { dishesMap[d.id] = d; });
+
+            let targetOrders = orders.filter(o => o.targetDay === selectedDay && o.status !== '已完成');
+            if (targetOrders.length === 0) {
+                alert(`【${selectedDay}】没有找到未完成的订单！`);
+                return;
+            }
+
+            // 1. 统计当天订单消耗的所有原材料总量
+            let ingredientConsumption = {};
+            targetOrders.forEach(order => {
+                // 将订单状态直接置为已完成
+                order.status = '已完成';
+
+                if (!order.items) return;
+                order.items.forEach(item => {
+                    let dish = dishesMap[item.id];
+                    if (dish && dish.ingredients) {
+                        let times = item.count;
+                        let rawParts = dish.ingredients.split(/[,$,;；]/);
+                        rawParts.forEach(part => {
+                            part = part.trim();
+                            if (!part) return;
+                            let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                            if (match) {
+                                let ingName = match[1].trim();
+                                let val = parseFloat(match[2]);
+                                let unit = match[3] ? match[3].trim() : '';
+                                let ingKey = `auto_${ingName}_${unit}`;
+                                if (!ingredientConsumption[ingKey]) {
+                                    ingredientConsumption[ingKey] = { name: ingName, unit: unit, total: 0 };
+                                }
+                                ingredientConsumption[ingKey].total += val * times;
+                            }
+                        });
+                    }
+                });
+            });
+
+            // 2. 自动扣除库存
+            for (let key in ingredientConsumption) {
+                let consumption = ingredientConsumption[key];
+                if (inventory[key]) {
+                    inventory[key].total = Math.max(0, inventory[key].total - consumption.total);
+                } else {
+                    // 如果库存中原本没有该项，则以负数或 0 初始化
+                    inventory[key] = {
+                        name: consumption.name,
+                        total: -consumption.total,
+                        unit: consumption.unit
+                    };
+                }
+            }
+
+            cloudData.inventory = inventory;
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            renderAll();
+            alert(`【${selectedDay}】订单已全部标记为完成，且相应原材料库存已成功扣除！🎉`);
+        }
+        // =======================================================================
 
         function renderInventory() {
             const container = document.getElementById('inventoryListContainer');
