@@ -3,834 +3,195 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JIA Family Restaurant</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter & Noto Sans SC -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
-        /* Custom scrollbar for clean UI */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        @keyframes pulse-subtle {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        .pulse-btn {
-            animation: pulse-subtle 2s infinite;
-        }
-    </style>
+    <title>温馨家庭点餐系统</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-amber-50/50 text-slate-800 antialiased min-h-screen flex flex-col justify-between selection:bg-amber-200">
+<body class="bg-amber-50/50 text-gray-800 pb-28">
 
-    <!-- Top Navigation Bar -->
-    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md shadow-sm border-b border-amber-100">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-400 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
-                    <i class="fa-solid fa-utensils text-lg"></i>
-                </div>
-                <div>
-                    <h1 class="font-bold text-lg text-slate-900 leading-tight">幸福私房菜</h1>
-                    <p class="text-xs text-amber-600 font-medium">今天大厨掌勺，想吃点什么？</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <!-- Mode Switcher Buttons -->
-                <button onclick="switchMode('customer')" id="nav-btn-customer" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 bg-amber-500 text-white shadow-sm shadow-amber-500/30">
-                    <i class="fa-solid fa-house-chimney mr-1"></i>点餐端
-                </button>
-                <button onclick="switchMode('admin')" id="nav-btn-admin" class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 bg-slate-100 text-slate-600 hover:bg-slate-200">
-                    <i class="fa-solid fa-fire-burner mr-1"></i>大厨后台
-                </button>
-            </div>
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-xs sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+            <span class="text-2xl">🍲</span>
+            <h1 class="font-bold text-lg text-amber-900">温馨家庭点餐</h1>
+        </div>
+        <!-- 身份选择 -->
+        <div class="flex items-center bg-amber-100/60 px-3 py-1.5 rounded-full text-sm">
+            <i class="fa-solid fa-user text-amber-700 mr-1.5"></i>
+            <select id="userSelect" class="bg-transparent font-medium text-amber-900 outline-none">
+                <option value="爸爸">爸爸</option>
+                <option value="妈妈">妈妈</option>
+                <option value="大宝">大宝</option>
+                <option value="二宝">二宝</option>
+                <option value="爷爷">爷爷</option>
+                <option value="奶奶">奶奶</option>
+            </select>
         </div>
     </header>
 
-    <!-- MAIN CONTAINER -->
-    <main class="flex-1 max-w-4xl w-full mx-auto px-4 py-4 pb-28">
-
-        <!-- ================= CUSTOMER VIEW ================= -->
-        <div id="view-customer" class="space-y-6">
-            
-            <!-- Family Member Selector Banner -->
-            <div class="bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl p-5 text-white shadow-lg shadow-orange-500/15 relative overflow-hidden">
-                <div class="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4">
-                    <i class="fa-solid fa-bowl-food text-9xl"></i>
-                </div>
-                <div class="relative z-10">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <span class="bg-white/20 text-white text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">今日特供</span>
-                            <h2 class="text-xl font-bold mt-2">欢迎来到私房菜馆 👨‍🍳</h2>
-                            <p class="text-amber-100 text-xs mt-1">请选择您的身份并尽情点餐，大厨即刻为您开火！</p>
-                        </div>
-                    </div>
-                    <div class="mt-4 flex items-center space-x-2">
-                        <span class="text-xs font-medium text-amber-100"><i class="fa-solid fa-user-tag mr-1"></i> 就餐人：</span>
-                        <select id="table-user-select" class="bg-white/20 text-white text-xs font-bold rounded-xl px-3 py-1.5 border border-white/30 focus:outline-none focus:ring-2 focus:ring-white">
-                            <option value="爸爸" class="text-slate-800">爸爸 👨</option>
-                            <option value="妈妈" class="text-slate-800">妈妈 👩</option>
-                            <option value="大宝" class="text-slate-800">大宝 👦</option>
-                            <option value="二宝" class="text-slate-800">二宝 👧</option>
-                            <option value="爷爷/奶奶" class="text-slate-800">爷爷/奶奶 👴</option>
-                            <option value="姥爷/姥姥" class="text-slate-800">姥爷/姥姥 👵</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Categories Tabs -->
-            <div class="sticky top-16 z-20 bg-amber-50/90 backdrop-blur-md py-2 -mx-4 px-4 overflow-x-auto no-scrollbar flex space-x-2 border-b border-amber-100/60" id="category-tabs">
-                <!-- Dynamically rendered category pills -->
-            </div>
-
-            <!-- Menu Item Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="menu-grid">
-                <!-- Dynamically rendered menu items -->
-            </div>
+    <!-- 菜品展示网格 -->
+    <main class="max-w-md mx-auto p-4">
+        <div id="dishGrid" class="grid grid-cols-1 gap-4">
+            <!-- 动态加载菜品 -->
         </div>
-
-        <!-- ================= ADMIN VIEW ================= -->
-        <div id="view-admin" class="hidden space-y-6">
-            <!-- Admin Header Stats -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-xs text-slate-500 font-medium">待制作订单</p>
-                    <h3 class="text-2xl font-bold text-orange-500 mt-1" id="stat-pending">0</h3>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-                    <p class="text-xs text-slate-500 font-medium">总菜品数</p>
-                    <h3 class="text-2xl font-bold text-slate-800 mt-1" id="stat-dishes">0</h3>
-                </div>
-                <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 col-span-2 sm:col-span-1 flex items-center justify-between">
-                    <div>
-                        <p class="text-xs text-slate-500 font-medium">数据管理</p>
-                        <p class="text-xs font-bold text-slate-700 mt-1">重置/导入</p>
-                    </div>
-                    <button onclick="resetToDefaultData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition">恢复默认</button>
-                </div>
-            </div>
-
-            <!-- Admin Tabs -->
-            <div class="flex border-b border-slate-200">
-                <button onclick="switchAdminTab('orders')" id="admin-tab-orders" class="flex-1 pb-3 text-sm font-bold border-b-2 border-amber-500 text-amber-600 transition">
-                    <i class="fa-solid fa-receipt mr-1.5"></i>订单大屏管理
-                </button>
-                <button onclick="switchAdminTab('dishes')" id="admin-tab-dishes" class="flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition">
-                    <i class="fa-solid fa-utensils mr-1.5"></i>菜品菜单维护
-                </button>
-            </div>
-
-            <!-- Admin Panel: Orders Section -->
-            <div id="admin-section-orders" class="space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-base">家人实时点餐队列</h3>
-                    <button onclick="renderAdminOrders()" class="text-xs text-amber-600 hover:text-amber-700 font-semibold"><i class="fa-solid fa-rotate-right mr-1"></i>刷新</button>
-                </div>
-                <div class="space-y-3" id="admin-orders-list">
-                    <!-- Dynamically rendered orders -->
-                </div>
-            </div>
-
-            <!-- Admin Panel: Dishes Section -->
-            <div id="admin-section-dishes" class="hidden space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-slate-800 text-base">菜品管理列表</h3>
-                    <button onclick="openDishModal()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-sm shadow-amber-500/20 transition flex items-center">
-                        <i class="fa-solid fa-plus mr-1.5"></i>添加新菜品
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="admin-dishes-list">
-                    <!-- Dynamically rendered admin dishes -->
-                </div>
-            </div>
-        </div>
-
     </main>
 
-    <!-- Floating Cart Bar (Customer Only) -->
-    <div id="cart-floating-bar" class="fixed bottom-4 left-4 right-4 max-w-xl mx-auto z-40 transition-all duration-300 transform translate-y-32">
-        <div class="bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center justify-between border border-slate-800">
-            <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleCartDrawer()">
-                <div class="relative w-12 h-12 rounded-xl bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/30">
-                    <i class="fa-solid fa-cart-shopping text-lg"></i>
-                    <span id="cart-badge" class="absolute -top-1.5 -right-1.5 bg-rose-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900">0</span>
-                </div>
-                <div>
-                    <div class="flex items-center space-x-2">
-                        <span class="font-bold text-base" id="cart-total-price">¥0.00</span>
-                        <span class="text-xs text-slate-400">|</span>
-                        <span class="text-xs text-amber-400 font-medium" id="cart-count-desc">已选 0 份菜品</span>
-                    </div>
-                    <p class="text-[11px] text-slate-400">点击查看已点清单与备注</p>
-                </div>
-            </div>
-            <button onclick="openCheckoutModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md shadow-orange-500/20 transition transform active:scale-95">
-                去下单 <i class="fa-solid fa-chevron-right ml-1 text-xs"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Cart Drawer / Modal Backdrop -->
-    <div id="cart-drawer" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden transition-opacity duration-300">
-        <div class="absolute inset-x-0 bottom-0 max-w-xl mx-auto bg-white rounded-t-3xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300">
-            <!-- Drawer Header -->
-            <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div class="flex items-center space-x-2">
-                    <i class="fa-solid fa-bag-shopping text-amber-500"></i>
-                    <h3 class="font-bold text-slate-900 text-base">已点菜品购物车</h3>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <button onclick="clearCart()" class="text-xs text-rose-500 hover:text-rose-600 font-semibold flex items-center">
-                        <i class="fa-regular fa-trash-can mr-1"></i>清空
-                    </button>
-                    <button onclick="toggleCartDrawer()" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 flex items-center justify-center text-slate-600 transition">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-            </div>
-            <!-- Cart Items List -->
-            <div class="p-6 overflow-y-auto flex-1 space-y-4 max-h-[50vh]" id="cart-items-container">
-                <!-- Cart items rendered here -->
-            </div>
-            <!-- Drawer Footer -->
-            <div class="p-6 border-t border-slate-100 bg-slate-50 space-y-4">
-                <div class="flex justify-between items-center">
-                    <span class="text-sm font-medium text-slate-600">合计总额</span>
-                    <span class="text-xl font-bold text-amber-600" id="cart-drawer-total">¥0.00</span>
-                </div>
-                <button onclick="openCheckoutModal()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/25 transition">
-                    确认无误，提交订单给大厨
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Checkout Success / Detail Modal -->
-    <div id="checkout-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl space-y-4 animate-in zoom-in-95 duration-200">
-            <div class="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-2xl mx-auto flex items-center justify-center text-3xl shadow-inner">
-                <i class="fa-solid fa-check"></i>
+    <!-- 底部悬浮购物车栏 -->
+    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 shadow-lg p-4 max-w-md mx-auto flex items-center justify-between z-50 hidden">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleCartModal()">
+            <div class="relative bg-amber-600 text-white w-12 h-12 rounded-full flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-cart-shopping text-lg"></i>
+                <span id="cartBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">0</span>
             </div>
             <div>
-                <h3 class="text-xl font-bold text-slate-900">订单已成功提交！</h3>
-                <p class="text-xs text-slate-500 mt-1">大厨已经收到您的美味订单，请稍等片刻，热腾腾的饭菜马上就来~</p>
+                <p id="cartTotalPrice" class="text-lg font-bold text-amber-900">¥0</p>
+                <p class="text-xs text-gray-500">点击查看已选菜品</p>
             </div>
-            <div class="bg-amber-50 rounded-2xl p-4 text-left space-y-2 text-xs text-slate-700 border border-amber-100" id="checkout-receipt-info">
-                <!-- Receipt details -->
+        </div>
+        <button onclick="submitOrder()" class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-6 py-2.5 rounded-full shadow-md transition">
+            提交给大厨
+        </button>
+    </div>
+
+    <!-- 购物车明细弹窗 -->
+    <div id="cartModal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center hidden">
+        <div class="bg-white w-full max-w-md rounded-t-2xl p-5 max-h-[70vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="font-bold text-lg text-amber-900">已选菜品清单</h3>
+                <button onclick="toggleCartModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
-            <button onclick="closeCheckoutModal()" class="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition">
-                好的，我知道了
-            </button>
+            <div id="cartItemsList" class="overflow-y-auto py-4 space-y-3 flex-1">
+                <!-- 动态生成购物车内项目 -->
+            </div>
+            <div class="pt-3 border-t flex justify-between items-center font-bold">
+                <span>合计：</span>
+                <span id="cartModalTotal" class="text-xl text-amber-600">¥0</span>
+            </div>
         </div>
     </div>
 
-    <!-- Dish Edit/Add Modal (Admin) -->
-    <div id="dish-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 my-8">
-            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                <h3 class="font-bold text-slate-900 text-base" id="dish-modal-title">添加新菜品</h3>
-                <button onclick="closeDishModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-            <form id="dish-form" onsubmit="saveDish(event)" class="space-y-3 text-left">
-                <input type="hidden" id="dish-id">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">菜品名称</label>
-                    <input type="text" id="dish-name" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="例如：外婆红烧肉">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">菜品分类</label>
-                    <select id="dish-category" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
-                        <option value="热菜">热菜</option>
-                        <option value="汤羹">汤羹</option>
-                        <option value="主食">主食</option>
-                        <option value="饮品">饮品</option>
-                        <option value="凉菜/小吃">凉菜/小吃</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">价格 (¥)</label>
-                    <input type="number" step="0.5" id="dish-price" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="28.0">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">菜品图片 URL</label>
-                    <input type="url" id="dish-image" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="https://images.unsplash.com/photo-...">
-                    <p class="text-[10px] text-slate-400 mt-1">提示：可直接粘贴网络图片链接，推荐 Unsplash 高清美食图。</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">口味/特色描述</label>
-                    <textarea id="dish-desc" rows="2" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="例如：精选五花肉，软糯香甜，肥而不腻"></textarea>
-                </div>
-                <div class="pt-3">
-                    <button type="submit" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-sm shadow-md shadow-amber-500/25 transition">
-                        保存菜品
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Toast Notification Banner -->
-    <div id="toast-notification" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-slate-900/90 text-white px-4 py-2.5 rounded-2xl shadow-xl text-xs font-medium flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4">
-        <i class="fa-solid fa-circle-check text-amber-400"></i>
-        <span id="toast-message">操作成功</span>
-    </div>
-
-    <!-- Footer -->
-    <footer class="text-center py-6 text-xs text-slate-400 border-t border-amber-100/60 mt-auto">
-        <p>温馨家庭点餐系统 &copy; 2026 | 为全家人打造的幸福厨房</p>
-    </footer>
-
-    <!-- JavaScript Application Logic -->
     <script>
-        const DEFAULT_DISHES = [
-            {
-                id: 'd1',
-                name: '外婆红烧肉',
-                category: '热菜',
-                price: 48,
-                image: 'https://images.unsplash.com/photo-1543339308-43e59d6b73a6?auto=format&fit=crop&w=600&q=80',
-                desc: '精选上等五花肉，慢火细炖，色泽红亮、肥而不腻。'
-            },
-            {
-                id: 'd2',
-                name: '清蒸海鲈鱼',
-                category: '热菜',
-                price: 68,
-                image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=600&q=80',
-                desc: '生猛海鲜鲜活清蒸，佐以葱姜丝与秘制蒸鱼豉油，鲜美无比。'
-            },
-            {
-                id: 'd3',
-                name: '手撕包菜',
-                category: '热菜',
-                price: 22,
-                image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80',
-                desc: '大火爆炒，爽脆清甜，带着淡淡的锅气与蒜香。'
-            },
-            {
-                id: 'd4',
-                name: '家常排骨汤',
-                category: '汤羹',
-                price: 38,
-                image: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80',
-                desc: '玉米与排骨慢火煲足两小时，汤汁浓郁营养丰富。'
-            },
-            {
-                id: 'd5',
-                name: '扬州炒饭',
-                category: '主食',
-                price: 26,
-                image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80',
-                desc: '粒粒分明的黄金炒饭，搭配虾仁、青豆与鸡蛋。'
-            },
-            {
-                id: 'd6',
-                name: '鲜榨玉米汁',
-                category: '饮品',
-                price: 20,
-                image: 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=600&q=80',
-                desc: '精选甜玉米鲜榨，香甜浓郁，老少皆宜。'
-            }
+        // 默认内置菜品（如果本地没有）
+        let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [
+            { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
+            { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
+            { id: 3, name: '番茄炒鸡蛋', price: 22, category: '热菜', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300', desc: '经典家常，酸甜开胃' }
         ];
 
-        let dishes = JSON.parse(localStorage.getItem('family_menu_dishes')) || DEFAULT_DISHES;
-        let orders = JSON.parse(localStorage.getItem('family_menu_orders')) || [];
         let cart = [];
-        let currentCategory = '全部';
-        let currentMode = 'customer'; // 'customer' or 'admin'
-        let currentAdminTab = 'orders'; // 'orders' or 'dishes'
 
-        // Initialize application on load
-        window.onload = function() {
-            renderCategories();
-            renderCustomerMenu();
-            updateCartUI();
-            renderAdminStats();
-            renderAdminOrders();
-            renderAdminDishes();
-        };
-
-        function switchMode(mode) {
-            currentMode = mode;
-            const customerView = document.getElementById('view-customer');
-            const adminView = document.getElementById('view-admin');
-            const btnCustomer = document.getElementById('nav-btn-customer');
-            const btnAdmin = document.getElementById('nav-btn-admin');
-            const cartBar = document.getElementById('cart-floating-bar');
-
-            if (mode === 'customer') {
-                customerView.classList.remove('hidden');
-                adminView.classList.add('hidden');
-                btnCustomer.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 bg-amber-500 text-white shadow-sm shadow-amber-500/30";
-                btnAdmin.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 bg-slate-100 text-slate-600 hover:bg-slate-200";
-                if (cart.length > 0) cartBar.classList.remove('translate-y-32');
-            } else {
-                customerView.classList.add('hidden');
-                adminView.classList.remove('hidden');
-                btnAdmin.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 bg-amber-500 text-white shadow-sm shadow-amber-500/30";
-                btnCustomer.className = "px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 bg-slate-100 text-slate-600 hover:bg-slate-200";
-                cartBar.classList.add('translate-y-32');
-                renderAdminOrders();
-                renderAdminDishes();
-                renderAdminStats();
-            }
-        }
-
-        function switchAdminTab(tab) {
-            currentAdminTab = tab;
-            const tabOrders = document.getElementById('admin-tab-orders');
-            const tabDishes = document.getElementById('admin-tab-dishes');
-            const secOrders = document.getElementById('admin-section-orders');
-            const secDishes = document.getElementById('admin-section-dishes');
-
-            if (tab === 'orders') {
-                tabOrders.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-amber-500 text-amber-600 transition";
-                tabDishes.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition";
-                secOrders.classList.remove('hidden');
-                secDishes.classList.add('hidden');
-                renderAdminOrders();
-            } else {
-                tabDishes.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-amber-500 text-amber-600 transition";
-                tabOrders.className = "flex-1 pb-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-slate-600 transition";
-                secDishes.classList.remove('hidden');
-                secOrders.classList.add('hidden');
-                renderAdminDishes();
-            }
-        }
-
-        function renderCategories() {
-            const categories = ['全部', ...new Set(dishes.map(d => d.category))];
-            const container = document.getElementById('category-tabs');
-            container.innerHTML = categories.map(cat => `
-                <button onclick="filterCategory('${cat}')" class="px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all shadow-sm ${currentCategory === cat ? 'bg-amber-500 text-white shadow-amber-500/30' : 'bg-white text-slate-600 hover:bg-amber-100/50 border border-amber-100'}">
-                    ${cat}
-                </button>
-            `).join('');
-        }
-
-        function filterCategory(cat) {
-            currentCategory = cat;
-            renderCategories();
-            renderCustomerMenu();
-        }
-
-        function renderCustomerMenu() {
-            const grid = document.getElementById('menu-grid');
-            const filtered = currentCategory === '全部' ? dishes : dishes.filter(d => d.category === currentCategory);
-
-            if (filtered.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-span-full py-12 text-center text-slate-400 bg-white rounded-3xl border border-amber-100">
-                        <i class="fa-solid fa-utensils text-3xl mb-2 text-amber-300"></i>
-                        <p class="text-sm">该分类暂无美味菜品，大厨正在研发中...</p>
-                    </div>
-                `;
-                return;
-            }
-
-            grid.innerHTML = filtered.map(dish => {
-                const cartItem = cart.find(item => item.id === dish.id);
-                const qty = cartItem ? cartItem.qty : 0;
-                return `
-                    <div class="bg-white rounded-3xl p-3 shadow-sm border border-amber-100 flex space-x-3 items-center relative overflow-hidden transition hover:shadow-md">
-                        <img src="${dish.image}" onerror="this.src='https://placehold.co/200x200/fef3c7/d97706?text=美食'" alt="${dish.name}" class="w-24 h-24 rounded-2xl object-cover flex-shrink-0 shadow-inner">
-                        <div class="flex-1 min-w-0 pr-1">
-                            <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">${dish.category}</span>
-                            <h4 class="font-bold text-slate-900 text-sm mt-1 truncate">${dish.name}</h4>
-                            <p class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${dish.desc || '暂无描述'}</p>
-                            <div class="flex items-center justify-between mt-2">
-                                <span class="font-bold text-amber-600 text-sm">¥${dish.price.toFixed(1)}</span>
-                                <div class="flex items-center space-x-2">
-                                    ${qty > 0 ? `
-                                        <button onclick="updateCartQty('${dish.id}', -1)" class="w-7 h-7 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-full flex items-center justify-center font-bold text-xs transition">
-                                            <i class="fa-solid fa-minus"></i>
-                                        </button>
-                                        <span class="text-xs font-bold w-4 text-center">${qty}</span>
-                                    ` : ''}
-                                    <button onclick="addToCart('${dish.id}')" class="w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white rounded-full flex items-center justify-center shadow-md shadow-amber-500/25 transition active:scale-90">
-                                        <i class="fa-solid fa-plus text-xs"></i>
-                                    </button>
-                                </div>
+        function renderDishes() {
+            const grid = document.getElementById('dishGrid');
+            grid.innerHTML = dishes.map(dish => `
+                <div class="bg-white rounded-xl shadow-xs overflow-hidden flex border border-gray-100">
+                    <img src="${dish.image}" alt="${dish.name}" class="w-28 h-28 object-cover">
+                    <div class="p-3 flex-1 flex flex-col justify-between">
+                        <div>
+                            <h3 class="font-bold text-base text-gray-800">${dish.name}</h3>
+                            <p class="text-xs text-gray-500 line-clamp-1 mt-0.5">${dish.desc || ''}</p>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <span class="text-amber-600 font-bold">¥${dish.price}</span>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="updateCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">-</button>
+                                <span class="text-sm font-semibold w-5 text-center">${getCartCount(dish.id)}</span>
+                                <button onclick="updateCart(${dish.id}, 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center">+</button>
                             </div>
                         </div>
                     </div>
-                `;
-            }).join('');
+                </div>
+            `).join('');
         }
 
-        function addToCart(dishId) {
-            const dish = dishes.find(d => d.id === dishId);
-            if (!dish) return;
-
-            const existing = cart.find(item => item.id === dishId);
-            if (existing) {
-                existing.qty += 1;
-            } else {
-                cart.push({ ...dish, qty: 1, note: '' });
-            }
-            updateCartUI();
-            renderCustomerMenu();
-            showToast(`已将 ${dish.name} 加入餐篮`);
+        function getCartCount(id) {
+            const item = cart.find(i => i.id === id);
+            return item ? item.count : 0;
         }
 
-        function updateCartQty(dishId, delta) {
-            const index = cart.findIndex(item => item.id === dishId);
-            if (index !== -1) {
-                cart[index].qty += delta;
-                if (cart[index].qty <= 0) {
-                    cart.splice(index, 1);
-                }
-            }
-            updateCartUI();
-            renderCustomerMenu();
-        }
-
-        function updateCartNote(dishId, note) {
-            const item = cart.find(i => i.id === dishId);
+        function updateCart(id, delta) {
+            const dish = dishes.find(d => d.id === id);
+            let item = cart.find(i => i.id === id);
             if (item) {
-                item.note = note;
+                item.count += delta;
+                if (item.count <= 0) {
+                    cart = cart.filter(i => i.id !== id);
+                }
+            } else if (delta > 0) {
+                cart.push({ ...dish, count: 1 });
             }
+            renderDishes();
+            updateCartBar();
         }
 
-        function clearCart() {
-            cart = [];
-            updateCartUI();
-            renderCustomerMenu();
-            toggleCartDrawer();
-            showToast("已清空购物车");
-        }
-
-        function updateCartUI() {
-            const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
-            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        function updateCartBar() {
+            const cartBar = document.getElementById('cartBar');
+            const badge = document.getElementById('cartBadge');
+            const totalPriceEl = document.getElementById('cartTotalPrice');
             
-            document.getElementById('cart-badge').innerText = totalCount;
-            document.getElementById('cart-total-price').innerText = `¥${totalPrice.toFixed(1)}`;
-            document.getElementById('cart-count-desc').innerText = `已选 ${totalCount} 份菜品`;
+            const totalCount = cart.reduce((sum, i) => sum + i.count, 0);
+            const totalPrice = cart.reduce((sum, i) => sum + i.price * i.count, 0);
 
-            const cartBar = document.getElementById('cart-floating-bar');
-            if (totalCount > 0 && currentMode === 'customer') {
-                cartBar.classList.remove('translate-y-32');
+            if (totalCount > 0) {
+                cartBar.classList.remove('hidden');
+                badge.innerText = totalCount;
+                totalPriceEl.innerText = `¥${totalPrice}`;
             } else {
-                cartBar.classList.add('translate-y-32');
+                cartBar.classList.add('hidden');
             }
+            renderCartModalList();
+        }
 
-            // Render Cart Drawer Content
-            const container = document.getElementById('cart-items-container');
-            document.getElementById('cart-drawer-total').innerText = `¥${totalPrice.toFixed(1)}`;
+        function renderCartModalList() {
+            const list = document.getElementById('cartItemsList');
+            const modalTotal = document.getElementById('cartModalTotal');
+            const totalPrice = cart.reduce((sum, i) => sum + i.price * i.count, 0);
+            modalTotal.innerText = `¥${totalPrice}`;
 
-            if (cart.length === 0) {
-                container.innerHTML = `
-                    <div class="py-12 text-center text-slate-400">
-                        <i class="fa-solid fa-basket-shopping text-4xl mb-2 text-slate-200"></i>
-                        <p class="text-xs">购物车空空如也，快去挑选美味吧~</p>
+            list.innerHTML = cart.map(item => `
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="font-medium text-sm">${item.name}</h4>
+                        <span class="text-xs text-gray-400">¥${item.price} / 份</span>
                     </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = cart.map(item => `
-                <div class="flex items-start justify-between space-x-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <img src="${item.image}" class="w-14 h-14 rounded-xl object-cover flex-shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <h5 class="font-bold text-slate-900 text-xs truncate">${item.name}</h5>
-                        <p class="text-amber-600 font-bold text-xs mt-0.5">¥${(item.price * item.qty).toFixed(1)}</p>
-                        <input type="text" value="${item.note || ''}" oninput="updateCartNote('${item.id}', this.value)" placeholder="口味要求：如少辣、不要香菜..." class="mt-2 w-full bg-white border border-slate-200 text-[11px] rounded-lg px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-amber-500">
-                    </div>
-                    <div class="flex items-center space-x-2 self-center">
-                        <button onclick="updateCartQty('${item.id}', -1)" class="w-6 h-6 bg-white border border-slate-200 hover:bg-slate-100 rounded-full flex items-center justify-center text-xs font-bold text-slate-700">
-                            <i class="fa-solid fa-minus text-[10px]"></i>
-                        </button>
-                        <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
-                        <button onclick="updateCartQty('${item.id}', 1)" class="w-6 h-6 bg-amber-500 hover:bg-amber-600 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                            <i class="fa-solid fa-plus text-[10px]"></i>
-                        </button>
+                    <div class="flex items-center space-x-3">
+                        <button onclick="updateCart(${item.id}, -1)" class="w-6 h-6 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs">-</button>
+                        <span class="text-sm font-semibold">${item.count}</span>
+                        <button onclick="updateCart(${item.id}, 1)" class="w-6 h-6 rounded-full bg-amber-600 text-white flex items-center justify-center text-xs">+</button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function toggleCartDrawer() {
-            const drawer = document.getElementById('cart-drawer');
-            drawer.classList.toggle('hidden');
+        function toggleCartModal() {
+            const modal = document.getElementById('cartModal');
+            modal.classList.toggle('hidden');
         }
 
-        function openCheckoutModal() {
-            if (cart.length === 0) {
-                showToast("购物车还没有菜品哦");
-                return;
-            }
-            toggleCartDrawer();
-
-            const userName = document.getElementById('table-user-select').value;
-            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            const orderId = 'ORD-' + Math.floor(1000 + Math.random() * 9000);
-            const nowTime = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-
+        function submitOrder() {
+            if (cart.length === 0) return;
+            const user = document.getElementById('userSelect').value;
+            const orders = JSON.parse(localStorage.getItem('family_orders')) || [];
+            
             const newOrder = {
-                id: orderId,
-                user: userName,
+                id: Date.now(),
+                user: user,
                 items: [...cart],
-                total: totalPrice,
-                time: nowTime,
-                status: 'pending' // pending, cooking, completed
+                totalPrice: cart.reduce((sum, i) => sum + i.price * i.count, 0),
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                status: '待制作'
             };
 
             orders.unshift(newOrder);
-            localStorage.setItem('family_menu_orders', JSON.stringify(orders));
+            localStorage.setItem('family_orders', JSON.stringify(orders));
 
-            // Populate receipt info
-            const receiptHtml = `
-                <div class="flex justify-between"><span>订单编号：</span><span class="font-bold text-slate-900">${orderId}</span></div>
-                <div class="flex justify-between"><span>就餐家人：</span><span class="font-bold text-slate-900">${userName}</span></div>
-                <div class="flex justify-between"><span>下单时间：</span><span class="font-bold text-slate-900">${nowTime}</span></div>
-                <div class="flex justify-between"><span>菜品总数：</span><span class="font-bold text-slate-900">${cart.reduce((s, i) => s + i.qty, 0)} 份</span></div>
-                <div class="flex justify-between border-t border-amber-200 pt-2 text-amber-600 font-bold"><span>支付总额：</span><span>¥${totalPrice.toFixed(1)} (记账家庭账单)</span></div>
-            `;
-            document.getElementById('checkout-receipt-info').innerHTML = receiptHtml;
-
-            // Clear cart
+            alert(`下单成功！大厨 ${user} 已经收到您的点餐啦~`);
             cart = [];
-            updateCartUI();
-            renderCustomerMenu();
-
-            // Show success modal
-            document.getElementById('checkout-modal').classList.remove('hidden');
-            renderAdminStats();
-            renderAdminOrders();
+            toggleCartModal();
+            updateCartBar();
+            renderDishes();
         }
 
-        function closeCheckoutModal() {
-            document.getElementById('checkout-modal').classList.add('hidden');
-        }
-
-        function renderAdminStats() {
-            const pendingCount = orders.filter(o => o.status === 'pending' || o.status === 'cooking').length;
-            document.getElementById('stat-pending').innerText = pendingCount;
-            document.getElementById('stat-dishes').innerText = dishes.length;
-        }
-
-        function renderAdminOrders() {
-            const container = document.getElementById('admin-orders-list');
-            if (orders.length === 0) {
-                container.innerHTML = `
-                    <div class="py-12 text-center bg-white rounded-3xl border border-slate-100 text-slate-400">
-                        <i class="fa-solid fa-receipt text-3xl mb-2 text-slate-200"></i>
-                        <p class="text-xs">暂无点餐订单记录</p>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = orders.map(order => {
-                let statusBadge = '';
-                let actionBtn = '';
-
-                if (order.status === 'pending') {
-                    statusBadge = `<span class="bg-amber-100 text-amber-700 text-[10px] font-bold px-2.5 py-1 rounded-full">待制作</span>`;
-                    actionBtn = `<button onclick="updateOrderStatus('${order.id}', 'cooking')" class="px-3 py-1.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition">开始制作</button>`;
-                } else if (order.status === 'cooking') {
-                    statusBadge = `<span class="bg-orange-100 text-orange-700 text-[10px] font-bold px-2.5 py-1 rounded-full animate-pulse">制作中 🍳</span>`;
-                    actionBtn = `<button onclick="updateOrderStatus('${order.id}', 'completed')" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition">完成出锅</button>`;
-                } else {
-                    statusBadge = `<span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2.5 py-1 rounded-full">已上菜 ✨</span>`;
-                    actionBtn = `<button onclick="updateOrderStatus('${order.id}', 'pending')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition">重新制作</button>`;
-                }
-
-                return `
-                    <div class="bg-white rounded-3xl p-4 shadow-sm border border-slate-100 space-y-3">
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-2.5">
-                            <div class="flex items-center space-x-2">
-                                <span class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-user"></i></span>
-                                <div>
-                                    <h4 class="font-bold text-slate-900 text-sm">${order.user}的点餐</h4>
-                                    <p class="text-[10px] text-slate-400">单号: ${order.id} | 下单时间: ${order.time}</p>
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                ${statusBadge}
-                                ${actionBtn}
-                            </div>
-                        </div>
-                        <div class="space-y-1.5">
-                            ${order.items.map(item => `
-                                <div class="flex justify-between items-center text-xs">
-                                    <div class="flex items-center space-x-2">
-                                        <span class="font-bold text-slate-800">${item.name}</span>
-                                        <span class="text-amber-600 font-semibold">x${item.qty}</span>
-                                        ${item.note ? `<span class="bg-rose-50 text-rose-600 text-[10px] px-2 py-0.5 rounded font-medium">备注: ${item.note}</span>` : ''}
-                                    </div>
-                                    <span class="text-slate-600 font-medium">¥${(item.price * item.qty).toFixed(1)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="flex justify-between items-center pt-2 border-t border-slate-50 text-xs font-bold">
-                            <span class="text-slate-500">订单总计</span>
-                            <span class="text-amber-600 text-sm">¥${order.total.toFixed(1)}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function updateOrderStatus(orderId, status) {
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                order.status = status;
-                localStorage.setItem('family_menu_orders', JSON.stringify(orders));
-                renderAdminOrders();
-                renderAdminStats();
-                showToast(`订单 ${orderId} 状态已更新`);
-            }
-        }
-
-        function renderAdminDishes() {
-            const container = document.getElementById('admin-dishes-list');
-            container.innerHTML = dishes.map(dish => `
-                <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 flex items-center space-x-3">
-                    <img src="${dish.image}" onerror="this.src='https://placehold.co/200x200/fef3c7/d97706?text=美食'" class="w-16 h-16 rounded-xl object-cover flex-shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <span class="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md">${dish.category}</span>
-                        <h5 class="font-bold text-slate-900 text-xs mt-1 truncate">${dish.name}</h5>
-                        <p class="text-xs font-bold text-amber-600 mt-0.5">¥${dish.price.toFixed(1)}</p>
-                    </div>
-                    <div class="flex flex-col space-y-1.5">
-                        <button onclick="editDish('${dish.id}')" class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteDish('${dish.id}')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function openDishModal(dishId = null) {
-            const modal = document.getElementById('dish-modal');
-            const title = document.getElementById('dish-modal-title');
-            document.getElementById('dish-form').reset();
-            document.getElementById('dish-id').value = '';
-
-            if (dishId) {
-                title.innerText = '编辑菜品';
-                const dish = dishes.find(d => d.id === dishId);
-                if (dish) {
-                    document.getElementById('dish-id').value = dish.id;
-                    document.getElementById('dish-name').value = dish.name;
-                    document.getElementById('dish-category').value = dish.category;
-                    document.getElementById('dish-price').value = dish.price;
-                    document.getElementById('dish-image').value = dish.image;
-                    document.getElementById('dish-desc').value = dish.desc || '';
-                }
-            } else {
-                title.innerText = '添加新菜品';
-            }
-            modal.classList.remove('hidden');
-        }
-
-        function closeDishModal() {
-            document.getElementById('dish-modal').classList.add('hidden');
-        }
-
-        function saveDish(event) {
-            event.preventDefault();
-            const id = document.getElementById('dish-id').value;
-            const name = document.getElementById('dish-name').value;
-            const category = document.getElementById('dish-category').value;
-            const price = parseFloat(document.getElementById('dish-price').value);
-            const image = document.getElementById('dish-image').value;
-            const desc = document.getElementById('dish-desc').value;
-
-            if (id) {
-                // Edit
-                const index = dishes.findIndex(d => d.id === id);
-                if (index !== -1) {
-                    dishes[index] = { id, name, category, price, image, desc };
-                }
-                showToast("菜品修改成功");
-            } else {
-                // Add
-                const newDish = {
-                    id: 'd_' + Date.now(),
-                    name,
-                    category,
-                    price,
-                    image,
-                    desc
-                };
-                dishes.push(newDish);
-                showToast("新菜品添加成功");
-            }
-
-            localStorage.setItem('family_menu_dishes', JSON.stringify(dishes));
-            closeDishModal();
-            renderCategories();
-            renderCustomerMenu();
-            renderAdminDishes();
-            renderAdminStats();
-        }
-
-        function editDish(dishId) {
-            openDishModal(dishId);
-        }
-
-        function deleteDish(dishId) {
-            if (confirm("确定要从菜单中删除这道菜吗？")) {
-                dishes = dishes.filter(d => d.id !== dishId);
-                localStorage.setItem('family_menu_dishes', JSON.stringify(dishes));
-                renderCategories();
-                renderCustomerMenu();
-                renderAdminDishes();
-                renderAdminStats();
-                showToast("菜品已删除");
-            }
-        }
-
-        function resetToDefaultData() {
-            if (confirm("确定恢复默认测试菜品数据吗？您的自定义修改将被覆盖。")) {
-                dishes = DEFAULT_DISHES;
-                orders = [];
-                localStorage.setItem('family_menu_dishes', JSON.stringify(dishes));
-                localStorage.setItem('family_menu_orders', JSON.stringify(orders));
-                renderCategories();
-                renderCustomerMenu();
-                renderAdminDishes();
-                renderAdminOrders();
-                renderAdminStats();
-                showToast("已恢复默认数据");
-            }
-        }
-
-        function showToast(message) {
-            const toast = document.getElementById('toast-notification');
-            document.getElementById('toast-message').innerText = message;
-            toast.classList.remove('opacity-0', '-translate-y-4', 'pointer-events-none');
-            toast.classList.add('opacity-100', 'translate-y-0');
-
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', '-translate-y-4', 'pointer-events-none');
-            }, 2500);
-        }
+        renderDishes();
     </script>
 </body>
 </html>
