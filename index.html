@@ -117,10 +117,10 @@
             { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
             { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃' }
         ];
-
         async function fetchCloudData() {
             try {
-                let res = await fetch(API_URL);
+                // 加上 '?t=' + Date.now() 强制每次都从云端加载最新菜单和订单，不走手机本地缓存
+                let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
                 if (json) {
                     cloudData = json;
@@ -134,6 +134,7 @@
             }
             renderDishes();
         }
+     
 
         async function saveCloudData() {
             try {
