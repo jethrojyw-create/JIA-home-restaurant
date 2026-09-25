@@ -97,7 +97,7 @@
         </div>
     </main>
 
-    <!-- 🌟 超市采购勾选大屏模式弹窗（含修改/删除/手动加购） -->
+    <!-- 🌟 超市采购勾选大屏模式弹窗 -->
     <div id="supermarketModal" class="fixed inset-0 bg-white z-50 flex flex-col hidden">
         <div class="bg-emerald-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
             <div class="flex items-center space-x-2">
@@ -110,9 +110,7 @@
             <span>买一样勾选一样，支持现场修改或删除！</span>
             <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
         </div>
-        <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full">
-            <!-- 动态生成超市原材料勾选列表 -->
-        </div>
+        <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full"></div>
         <div class="p-3 bg-white border-t max-w-lg mx-auto w-full">
             <button onclick="openAddManualShoppingItem()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">
                 <i class="fa-solid fa-plus mr-1"></i> 在超市临时加买一项
@@ -196,6 +194,7 @@
 
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
+
         let cloudData = { dishes: [], orders: [], checkedIngredients: {}, manualIngredients: [] };
         let currentTab = 'summary';
 
@@ -203,21 +202,40 @@
             try {
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
-                if (json) {
+                if (json && json.dishes && json.dishes.length > 0) {
                     cloudData = json;
-                    if (!cloudData.dishes) cloudData.dishes = [];
                     if (!cloudData.orders) cloudData.orders = [];
                     if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
                     if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
+                    
+                    // 💾 成功从云端拉取到几百个菜品后，立刻在浏览器本地做好备份！
+                    localStorage.setItem('family_dishes_backup', JSON.stringify(cloudData.dishes));
+                } else {
+                    // 🛡️ 云端如果被清空，自动从浏览器本地备份中读取您的几百个菜品！
+                    let localBackup = localStorage.getItem('family_dishes_backup');
+                    if (localBackup) {
+                        cloudData.dishes = JSON.parse(localBackup);
+                        console.log('检测到云端清空，已从本地备份恢复菜品！');
+                        await saveAllData(); // 自动恢复到云端
+                    }
                 }
             } catch (e) {
-                console.log('同步云端数据失败', e);
+                console.log('网络请求失败，尝试读取本地备份', e);
+                let localBackup = localStorage.getItem('family_dishes_backup');
+                if (localBackup) {
+                    cloudData.dishes = JSON.parse(localBackup);
+                }
             }
+
             renderAll();
         }
 
         async function saveAllData() {
             try {
+                // 保存时同样做好本地备份
+                if (cloudData.dishes && cloudData.dishes.length > 0) {
+                    localStorage.setItem('family_dishes_backup', JSON.stringify(cloudData.dishes));
+                }
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -312,8 +330,6 @@
             });
 
             let list = Object.values(ingredientSummary);
-
-            // 加上用户在超市手动加购的项目
             if (cloudData.manualIngredients) {
                 cloudData.manualIngredients.forEach(m => {
                     list.push({
@@ -534,7 +550,6 @@
             renderAll();
         }
 
-        // 🌟 超市采购模式（支持勾选、临时加购、修改、删除）
         function openSupermarketMode() {
             document.getElementById('supermarketModal').classList.remove('hidden');
             renderSupermarketList();
@@ -576,7 +591,7 @@
                         </div>
                         <div class="flex items-center space-x-1 shrink-0 ml-2">
                             ${item.isManual ? `
-                                <button onclick="openEditManualItem('${item.key}')" class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}')" class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-pen"></i></button>
                                 <button onclick="deleteManualItem('${item.key}')" class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
                             ` : `
                                 <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}')" class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-xs" title="调整数量"><i class="fa-solid fa-pen"></i></button>
@@ -594,7 +609,6 @@
             await saveAllData();
         }
 
-        // 临时加购 / 修改弹窗控制
         function openAddManualShoppingItem() {
             document.getElementById('manualModalTitle').innerText = '临时加买原材料';
             document.getElementById('editManualKey').value = '';
