@@ -93,7 +93,6 @@
                     <span class="font-bold text-xs text-amber-900"><span data-i18n="cart_selected">已选</span> <span id="cartCount" class="text-amber-600">0</span> <span data-i18n="cart_dishes">样菜品</span></span>
                     <span class="text-[11px] text-gray-400 ml-1.5">(<span id="cartDayLabel">周一</span>)</span>
                 </div>
-                <span class="font-extrabold text-amber-800 text-sm"><span data-i18n="cart_est">预估</span>: ¥<span id="cartTotalPrice">0</span></span>
             </div>
             <div id="cartItemsPreview" class="max-h-28 overflow-y-auto space-y-1 text-xs text-gray-600"></div>
             <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-1">
@@ -167,7 +166,7 @@
         let currentUser = '';
         let selectedDay = '周一';
         let selectedCategory = '全部';
-        let searchKeyword = ''; // 🔍 新增：搜索关键字状态
+        let searchKeyword = ''; 
         let cart = {}; 
         let activeDishForOptions = null; 
 
@@ -222,7 +221,6 @@
                 loading_dishes: "正在加载云端菜单库...",
                 cart_selected: "已选",
                 cart_dishes: "样菜品",
-                cart_est: "预估",
                 btn_submit_order: "确认提交给采购员",
                 family_modal_title: "全家人本周点菜一览",
                 my_modal_title: "我的全部预定单记录",
@@ -245,7 +243,6 @@
                 loading_dishes: "Loading cloud menu...",
                 cart_selected: "Selected",
                 cart_dishes: "items",
-                cart_est: "Est",
                 btn_submit_order: "Submit to Buyer",
                 family_modal_title: "Family Weekly Orders Overview",
                 my_modal_title: "My Booking History",
@@ -378,7 +375,6 @@
             renderDishes();
         }
 
-        // 🔍 新增：处理搜索输入实时过滤
         function handleSearchInput(value) {
             searchKeyword = value.trim().toLowerCase();
             let clearBtn = document.getElementById('clearSearchBtn');
@@ -390,7 +386,6 @@
             renderDishes();
         }
 
-        // 🔍 新增：清空搜索框
         function clearSearch() {
             document.getElementById('searchInput').value = '';
             searchKeyword = '';
@@ -402,12 +397,10 @@
             const container = document.getElementById('dishListContainer');
             let dishes = cloudData.dishes || [];
 
-            // 分类过滤
             if (selectedCategory !== '全部') {
                 dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
             }
 
-            // 🔍 搜索关键字过滤（支持匹配中文名、英文翻译及描述）
             if (searchKeyword) {
                 dishes = dishes.filter(d => {
                     let nameZh = (d.name || '').toLowerCase();
@@ -438,7 +431,6 @@
                                     <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded font-medium shrink-0">${displayCat}</span>
                                 </div>
                                 <p class="text-[10px] text-gray-400 truncate">${dish.desc || ''}</p>
-                                <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
                             </div>
                         </div>
                         <div class="shrink-0 ml-2">
@@ -471,15 +463,13 @@
             } else {
                 container.innerHTML = options.map((opt, idx) => {
                     let optName = typeof opt === 'object' ? opt.name : opt;
-                    let optPrice = typeof opt === 'object' ? (parseFloat(opt.price) || 0) : 0;
                     
                     return `
                         <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                             <div class="flex items-center space-x-2">
-                                <input type="checkbox" name="dishOption" value="${optName}" data-price="${optPrice}" class="w-4 h-4 text-amber-600 rounded">
+                                <input type="checkbox" name="dishOption" value="${optName}" class="w-4 h-4 text-amber-600 rounded">
                                 <span class="font-bold text-gray-800">${optName}</span>
                             </div>
-                            <span class="text-amber-700 font-semibold">${optPrice > 0 ? `+¥${optPrice}` : '免费'}</span>
                         </label>
                     `;
                 }).join('');
@@ -497,23 +487,19 @@
             if (!activeDishForOptions) return;
             let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
             let selectedOptions = [];
-            let extraPrice = 0;
 
             checkboxes.forEach(cb => {
                 selectedOptions.push(cb.value);
-                extraPrice += parseFloat(cb.dataset.price) || 0;
             });
 
             selectedOptions.sort(); 
             let key = `${activeDishForOptions.id}_${selectedOptions.join('_')}`;
-            let unitPrice = activeDishForOptions.price + extraPrice;
 
             if (!cart[key]) {
                 cart[key] = {
                     dish: activeDishForOptions,
                     count: 1,
-                    selectedOptions: selectedOptions,
-                    unitPrice: unitPrice
+                    selectedOptions: selectedOptions
                 };
             } else {
                 cart[key].count++;
@@ -532,8 +518,7 @@
                 cart[key] = {
                     dish: dish,
                     count: 1,
-                    selectedOptions: [],
-                    unitPrice: dish.price
+                    selectedOptions: []
                 };
             } else {
                 cart[key].count++;
@@ -553,21 +538,19 @@
 
         function updateCartBar() {
             const bar = document.getElementById('cartBar');
-            let totalCount = 0, totalPrice = 0, previewHtml = '';
+            let totalCount = 0, previewHtml = '';
 
             for (let cartKey in cart) {
                 let item = cart[cartKey];
                 totalCount += item.count;
-                totalPrice += item.unitPrice * item.count;
                 
                 let subText = item.selectedOptions.length > 0 ? ` (${item.selectedOptions.join(', ')})` : '';
-                previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(item.dish.name)}${subText} x${item.count}</span><span class="font-bold">¥${item.unitPrice * item.count}</span></div>`;
+                previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(item.dish.name)}${subText} x${item.count}</span></div>`;
             }
 
             if (totalCount > 0) {
                 bar.classList.remove('hidden');
                 document.getElementById('cartCount').innerText = totalCount;
-                document.getElementById('cartTotalPrice').innerText = totalPrice;
                 document.getElementById('cartDayLabel').innerText = t(getDayKeyMap(selectedDay));
                 document.getElementById('cartItemsPreview').innerHTML = previewHtml;
             } else { 
@@ -581,7 +564,6 @@
             if (keys.length === 0) return;
 
             let items = [];
-            let totalPrice = 0;
 
             for (let k in keys) {
                 let key = keys[k];
@@ -591,11 +573,8 @@
                     name: item.dish.name, 
                     subOption: item.selectedOptions.join(', '), 
                     selectedOptions: item.selectedOptions,
-                    price: item.unitPrice, 
-                    count: item.count,
-                    itemTotalPrice: item.unitPrice * item.count
+                    count: item.count
                 });
-                totalPrice += item.unitPrice * item.count;
             }
 
             const newOrder = {
@@ -603,7 +582,6 @@
                 user: currentUser,
                 targetDay: selectedDay,
                 items: items,
-                totalPrice: totalPrice,
                 status: '待采购', 
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
@@ -653,8 +631,7 @@
                                     ${order.items.map(i => {
                                         let opts = i.selectedOptions ? i.selectedOptions.join(', ') : i.subOption;
                                         let subText = opts ? ` (${opts})` : '';
-                                        let itemPrice = i.itemTotalPrice !== undefined ? i.itemTotalPrice : (i.price * i.count);
-                                        return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${itemPrice}</span></div>`;
+                                        return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span></div>`;
                                     }).join('')}
                                 </div>
                             </div>
@@ -691,13 +668,11 @@
                             ${order.items.map(i => {
                                 let opts = i.selectedOptions ? i.selectedOptions.join(', ') : i.subOption;
                                 let subText = opts ? ` (${opts})` : '';
-                                let itemPrice = i.itemTotalPrice !== undefined ? i.itemTotalPrice : (i.price * i.count);
-                                return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${itemPrice}</span></div>`;
+                                return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span></div>`;
                             }).join('')}
                         </div>
                         <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
                             <span class="text-gray-400">${order.time || ''}</span>
-                            <span class="font-bold text-amber-900">${currentLang === 'zh' ? '总计' : 'Total'}: ¥${order.totalPrice}</span>
                         </div>
                     </div>
                 `;
