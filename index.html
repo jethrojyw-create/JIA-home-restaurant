@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家庭周末点菜系统 (前台)</title>
+    <title>家庭全周大采购 - 点菜端</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -11,500 +11,594 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-gray-800 pb-36">
+<body class="bg-amber-50/40 text-gray-800 pb-32">
 
-    <!-- 顶部导航与星期选择 -->
-    <header class="bg-white shadow-xs sticky top-0 z-40 px-3 py-2.5 space-y-2 w-full">
-        <div class="flex justify-between items-center">
-            <div class="flex items-center space-x-2">
-                <span class="text-xl">🍲</span>
-                <div>
-                    <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭周末点菜系统</h1>
-                    <p class="text-[10px] text-gray-400">选择心仪的菜品与配菜，享受美味周末</p>
-                </div>
-            </div>
-            <div class="flex items-center space-x-2">
-                <button onclick="openUserOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
-                    <i class="fa-solid fa-receipt"></i>
-                    <span>我的点单</span>
-                </button>
+    <!-- 顶部导航 -->
+    <header class="bg-white shadow-xs sticky top-0 z-40 px-3 py-3 flex justify-between items-center w-full">
+        <div class="flex items-center space-x-2">
+            <span class="text-xl">🍲</span>
+            <div>
+                <h1 class="font-bold text-sm text-amber-900 leading-tight" data-i18n="app_title">家庭全周大采购</h1>
+                <p class="text-[10px] text-gray-400" id="currentLoginUserDisplay">点菜人: 请设置</p>
             </div>
         </div>
-
-        <!-- 星期选择横向滚动栏 -->
-        <div class="flex space-x-1.5 overflow-x-auto no-scrollbar py-1" id="daySelectorContainer">
-            <!-- 动态渲染周一至周日 -->
+        <div class="flex items-center space-x-1.5">
+            <button onclick="toggleLang()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded-lg transition" id="langBtn">EN</button>
+            <button onclick="openFamilyOrdersModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold px-2 py-1.5 rounded-lg transition flex items-center space-x-1 border border-amber-200">
+                <i class="fa-solid fa-users text-amber-600"></i>
+                <span data-i18n="nav_family_menu">全家菜单</span>
+            </button>
+            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-2 py-1.5 rounded-lg transition flex items-center space-x-1">
+                <i class="fa-solid fa-receipt"></i>
+                <span data-i18n="nav_my_orders">我的</span>
+            </button>
+            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-2 py-1.5 rounded-lg transition flex items-center space-x-1">
+                <i class="fa-solid fa-user-pen"></i>
+                <span id="switchUserBtnText">切换</span>
+            </button>
         </div>
     </header>
 
-    <!-- 主体菜单区 -->
+    <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-4">
-        <!-- 分类切换标签 -->
-        <div class="flex space-x-2 overflow-x-auto no-scrollbar text-xs font-bold" id="categoryTabsContainer">
-            <button onclick="filterCategory('全部')" class="cat-btn px-3 py-1.5 rounded-full bg-amber-600 text-white shrink-0 shadow-xs">全部</button>
-            <button onclick="filterCategory('热菜')" class="cat-btn px-3 py-1.5 rounded-full bg-white text-gray-600 border shrink-0">热菜</button>
-            <button onclick="filterCategory('凉菜')" class="cat-btn px-3 py-1.5 rounded-full bg-white text-gray-600 border shrink-0">凉菜</button>
-            <button onclick="filterCategory('主食/汤品')" class="cat-btn px-3 py-1.5 rounded-full bg-white text-gray-600 border shrink-0">主食/汤品</button>
-            <button onclick="filterCategory('饮品/甜点')" class="cat-btn px-3 py-1.5 rounded-full bg-white text-gray-600 border shrink-0">饮品/甜点</button>
+        
+        <!-- 星期选择横幅 -->
+        <div class="bg-white rounded-2xl p-3.5 border border-amber-200/60 shadow-xs space-y-2.5">
+            <div class="flex justify-between items-center">
+                <h2 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i><span data-i18n="select_day_title">选择预定哪一天的饭菜</span></h2>
+                <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold">周一</span>
+            </div>
+            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="dayTabs">
+                <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" data-day="周一" data-i18n-day="monday">周一</button>
+                <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周二" data-i18n-day="tuesday">周二</button>
+                <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周三" data-i18n-day="wednesday">周三</button>
+                <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周四" data-i18n-day="thursday">周四</button>
+                <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周五" data-i18n-day="friday">周五</button>
+                <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周六" data-i18n-day="saturday">周六</button>
+                <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周日" data-i18n-day="sunday">周日</button>
+            </div>
         </div>
 
-        <!-- 菜品列表 -->
-        <div id="menuListContainer" class="grid grid-cols-1 gap-3">
-            <div class="text-center py-16 text-gray-400 text-xs">正在加载美味菜单...</div>
+        <!-- 菜单分类导航 -->
+        <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs">
+            <button onclick="filterCategory('全部')" id="cat-all" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" data-i18n="cat_all">全部菜品</button>
+            <button onclick="filterCategory('热菜')" id="cat-hot" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_hot">热菜</button>
+            <button onclick="filterCategory('凉菜')" id="cat-cold" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_cold">凉菜</button>
+            <button onclick="filterCategory('主食/汤品')" id="cat-soup" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_soup">主食/汤品</button>
+            <button onclick="filterCategory('饮品/甜点')" id="cat-drink" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_drink">饮品/甜点</button>
+        </div>
+
+        <!-- 菜品列表容器 -->
+        <div id="dishListContainer" class="grid grid-cols-1 gap-3">
+            <div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border" data-i18n="loading_dishes">正在加载云端菜单库...</div>
         </div>
     </main>
 
     <!-- 底部已选购物车悬浮栏 -->
-    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-amber-100 p-3 z-30 shadow-lg max-w-lg mx-auto hidden">
-        <div class="flex justify-between items-center mb-2 text-xs">
-            <div class="flex items-center space-x-2">
-                <span class="bg-amber-600 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold" id="cartCount">0</span>
-                <span class="font-bold text-amber-900" id="cartSummaryText">已选 0 样菜品</span>
-            </div>
-            <span class="font-extrabold text-amber-800 text-sm">总计: ¥<span id="cartTotalPrice">0</span></span>
-        </div>
-        <div class="flex space-x-2">
-            <button onclick="openCartPreview()" class="flex-1 bg-amber-100 hover:bg-amber-200 text-amber-900 py-2.5 rounded-xl font-bold text-xs transition">查看明细</button>
-            <button onclick="submitOrder()" class="flex-2 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">提交给大厨 (<span id="cartTargetDayText">周一</span>)</button>
-        </div>
-    </div>
-
-    <!-- 配菜选择弹窗 -->
-    <div id="optionsModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3">
+    <div id="cartBar" class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t p-3.5 z-30 w-full hidden shadow-2xl rounded-t-2xl">
+        <div class="w-full max-w-lg mx-auto space-y-2.5">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-sm text-amber-900" id="optionsDishName">选择配菜与偏好</h3>
-                <button onclick="closeOptionsModal()" class="text-gray-400 hover:text-gray-600 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
+                <div>
+                    <span class="font-bold text-xs text-amber-900"><span data-i18n="cart_selected">已选</span> <span id="cartCount" class="text-amber-600">0</span> <span data-i18n="cart_dishes">样菜品</span></span>
+                    <span class="text-[11px] text-gray-400 ml-1.5">(<span id="cartDayLabel">周一</span>)</span>
+                </div>
+                <span class="font-extrabold text-amber-800 text-sm"><span data-i18n="cart_est">预估</span>: ¥<span id="cartTotalPrice">0</span></span>
             </div>
-            <div id="optionsListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs py-1">
-                <!-- 动态生成配菜复选框 -->
-            </div>
-            <div class="flex space-x-2 pt-2">
-                <button onclick="closeOptionsModal()" class="flex-1 bg-gray-100 py-2 rounded-xl text-xs font-bold">取消</button>
-                <button onclick="confirmAddWithdrawnOptions()" class="flex-1 bg-amber-600 text-white py-2 rounded-xl text-xs font-bold">确认加入购物车</button>
-            </div>
+            <div id="cartItemsPreview" class="max-h-28 overflow-y-auto space-y-1 text-xs text-gray-600"></div>
+            <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-1">
+                <i class="fa-solid fa-paper-plane"></i>
+                <span data-i18n="btn_submit_order">确认提交给采购员</span>
+            </button>
         </div>
     </div>
 
-    <!-- 购物车明细预览弹窗 -->
-    <div id="cartModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3 max-h-[80vh] flex flex-col">
-            <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-sm text-amber-900">购物车明细</h3>
-                <button onclick="closeCartPreview()" class="text-gray-400 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
+    <!-- 查看全家人点菜面板 -->
+    <div id="familyOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b">
+                <h3 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-users mr-1.5 text-amber-600"></i><span data-i18n="family_modal_title">全家人本周点菜一览</span></h3>
+                <button onclick="closeFamilyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <div id="cartModalItemsContainer" class="flex-1 overflow-y-auto space-y-2 text-xs divide-y divide-gray-100">
-                <!-- 购物车明细列表 -->
-            </div>
-            <div class="pt-2 border-t flex justify-between items-center text-xs font-bold">
-                <span>合计</span>
-                <span class="text-amber-800 text-sm">¥<span id="modalTotalPrice">0</span></span>
-            </div>
-            <button onclick="submitOrder(); closeCartPreview();" class="w-full bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-md">立即提交订单</button>
+            <div id="familyOrdersListContainer" class="space-y-3 pt-1"></div>
+            <button onclick="closeFamilyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl font-medium text-xs transition" data-i18n="btn_close">关闭</button>
         </div>
     </div>
 
-    <!-- 我的点单记录弹窗 -->
-    <div id="userOrdersModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
-        <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] flex flex-col">
-            <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-sm text-amber-900">家庭成员点单记录</h3>
-                <button onclick="closeUserOrdersModal()" class="text-gray-400 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
+    <!-- 我的预定单弹窗 -->
+    <div id="myOrdersModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-md rounded-2xl p-4 shadow-2xl space-y-3 max-h-[85vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-2 border-b">
+                <h3 class="font-bold text-sm text-amber-900"><i class="fa-solid fa-receipt mr-1.5"></i><span data-i18n="my_modal_title">我的全部预定单记录</span></h3>
+                <button onclick="closeMyOrdersModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
-            <div id="userOrdersContainer" class="flex-1 overflow-y-auto space-y-2.5 text-xs">
-                <div class="text-center py-10 text-gray-400">加载中...</div>
-            </div>
-            <button onclick="closeUserOrdersModal()" class="w-full bg-gray-100 text-gray-700 py-2 rounded-xl font-bold text-xs">关闭</button>
+            <div id="myOrdersListContainer" class="space-y-2.5 pt-1"></div>
+            <button onclick="closeMyOrdersModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl font-medium text-xs transition" data-i18n="btn_close">关闭</button>
         </div>
     </div>
 
-    <!-- 用户身份设置弹窗 -->
-    <div id="userSetupModal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 hidden">
-        <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
-            <h3 class="font-bold text-sm text-amber-900">👋 欢迎！请先告诉大家你是谁</h3>
-            <p class="text-[11px] text-gray-400">输入您的称呼，方便家里大厨统计点菜：</p>
-            <input type="text" id="userNameInput" placeholder="例如：爸爸、妈妈、宝儿" class="w-full bg-amber-50/60 border border-amber-200 rounded-xl px-3 py-2 text-xs outline-none">
-            <button onclick="saveUserName()" class="w-full bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-md">开始点菜</button>
+    <!-- 用户设置弹窗 -->
+    <div id="userModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-5 shadow-2xl space-y-3.5 text-center">
+            <div class="text-3xl">👋</div>
+            <h3 class="font-bold text-base text-amber-900" data-i18n="user_modal_title">欢迎点菜！请先告诉我们你是谁</h3>
+            <input type="text" id="userNameInput" placeholder="爸爸 / 妈妈 / Dad / Mom" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-center text-xs outline-none focus:border-amber-500 font-semibold">
+            <button onclick="saveUser()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs" data-i18n="btn_start_ordering">开始点菜</button>
+        </div>
+    </div>
+
+    <!-- 🖼️ 图片放大预览弹窗 -->
+    <div id="imageModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-4" onclick="closeImageModal()">
+        <div class="relative max-w-lg w-full flex flex-col items-center" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300 transition"><i class="fa-solid fa-xmark"></i></button>
+            <img id="enlargedImg" src="" class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl object-contain bg-black/20">
+            <p id="enlargedTitle" class="text-white text-sm mt-3 font-bold tracking-wide"></p>
         </div>
     </div>
 
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-
         let cloudData = { dishes: [], orders: [] };
-        let currentDay = '周一';
-        let currentCategory = '全部';
-        let cart = {}; // key: dishId_optionsHash, value: { dish, count, selectedOptions }
-        let currentUser = localStorage.getItem('family_current_user') || '';
-        let activeDishForOptions = null; // 当前正在选配菜的菜品
+        let currentUser = '';
+        let selectedDay = '周一';
+        let selectedCategory = '全部';
+        let cart = {}; // 格式升级为支持配菜选择: { "dishId_subOption": count } 或者普通 dishId
+        let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
-        const days = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+        const dishTranslationMap = {
+            "红烧肉": "Braised Pork Belly",
+            "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
+            "宫保鸡丁": "Kung Pao Chicken",
+            "麻婆豆腐": "Mapo Tofu",
+            "水煮肉片": "Boiled Pork Slices",
+            "清蒸鱼": "Steamed Fish",
+            "拍黄瓜": "Smashed Cucumbers",
+            "酸辣汤": "Hot and Sour Soup",
+            "蛋炒饭": "Egg Fried Rice",
+            "红烧排骨": "Braised Pork Ribs",
+            "糖醋里脊": "Sweet and Sour Pork",
+            "地三鲜": "Stir-fried Potatoes, Eggplants and Peppers"
+        };
+
+        const categoryTranslationMap = {
+            "热菜": "Hot Dish",
+            "凉菜": "Cold Dish",
+            "主食/汤品": "Staple / Soup",
+            "饮品/甜点": "Drink / Dessert"
+        };
+
+        function translateDishName(name) {
+            if (currentLang !== 'en') return name; 
+            if (dishTranslationMap[name]) return dishTranslationMap[name];
+
+            fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(name)}&langpair=zh|en`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && data.responseData && data.responseData.translatedText) {
+                        let translated = data.responseData.translatedText;
+                        translated = translated.charAt(0).toUpperCase() + translated.slice(1);
+                        dishTranslationMap[name] = translated;
+                        if (currentLang === 'en') {
+                            renderDishes();
+                            updateCartBar();
+                        }
+                    }
+                })
+                .catch(e => console.log('自动翻译失败', e));
+
+            return name; 
+        }
+
+        function translateCategory(cat) {
+            if (currentLang === 'en') {
+                return categoryTranslationMap[cat] || cat;
+            }
+            return cat;
+        }
+
+        const i18nText = {
+            zh: {
+                app_title: "家庭全周大采购",
+                nav_family_menu: "全家菜单",
+                nav_my_orders: "我的",
+                select_day_title: "选择预定哪一天的饭菜",
+                cat_all: "全部菜品",
+                cat_hot: "热菜",
+                cat_cold: "凉菜",
+                cat_soup: "主食/汤品",
+                cat_drink: "饮品/甜点",
+                loading_dishes: "正在加载云端菜单库...",
+                cart_selected: "已选",
+                cart_dishes: "样菜品",
+                cart_est: "预估",
+                btn_submit_order: "确认提交给采购员",
+                family_modal_title: "全家人本周点菜一览",
+                my_modal_title: "我的全部预定单记录",
+                btn_close: "关闭",
+                user_modal_title: "欢迎点菜！请先告诉我们你是谁",
+                btn_start_ordering: "开始点菜",
+                monday: "周一", tuesday: "周二", wednesday: "周三", thursday: "周四", friday: "周五", saturday: "周六", sunday: "周日",
+                status_pending: "待采购", status_purchased: "已采购", status_completed: "已完成"
+            },
+            en: {
+                app_title: "Weekly Family Grocery",
+                nav_family_menu: "Family Menu",
+                nav_my_orders: "My Orders",
+                select_day_title: "Select day for meal booking",
+                cat_all: "All Dishes",
+                cat_hot: "Hot Dishes",
+                cat_cold: "Cold Dishes",
+                cat_soup: "Staples/Soup",
+                cat_drink: "Drinks/Dessert",
+                loading_dishes: "Loading cloud menu...",
+                cart_selected: "Selected",
+                cart_dishes: "items",
+                cart_est: "Est",
+                btn_submit_order: "Submit to Buyer",
+                family_modal_title: "Family Weekly Orders Overview",
+                my_modal_title: "My Booking History",
+                btn_close: "Close",
+                user_modal_title: "Welcome! Please tell us who you are",
+                btn_start_ordering: "Start Ordering",
+                monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday",
+                status_pending: "Pending", status_purchased: "Purchased", status_completed: "Completed"
+            }
+        };
+
+        function t(key) {
+            return (i18nText[currentLang] && i18nText[currentLang][key]) || i18nText['zh'][key] || key;
+        }
+
+        function toggleLang() {
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            localStorage.setItem('family_order_lang', currentLang);
+            updateUIStrings();
+            renderDishes();
+            updateCartBar();
+            if(!document.getElementById('myOrdersModal').classList.contains('hidden')) renderMyOrdersList();
+            if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) renderFamilyOrdersList();
+        }
+
+        function updateUIStrings() {
+            document.getElementById('langBtn').innerText = currentLang === 'zh' ? 'EN' : '中';
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                let key = el.getAttribute('data-i18n');
+                el.innerText = t(key);
+            });
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                let dayKey = btn.getAttribute('data-i18n-day');
+                btn.innerText = t(dayKey);
+            });
+            document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(selectedDay));
+        }
+
+        function getDayKeyMap(day) {
+            const map = { '周一': 'monday', '周二': 'tuesday', '周三': 'wednesday', '周四': 'thursday', '周五': 'friday', '周六': 'saturday', '周日': 'sunday' };
+            return map[day] || 'monday';
+        }
 
         async function fetchAllData() {
             try {
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
-                if (json && json.dishes) {
-                    cloudData.dishes = json.dishes;
+                if (json) {
+                    cloudData.dishes = json.dishes || [];
                     cloudData.orders = json.orders || [];
+                    if (cloudData.dishes.length > 0) {
+                        localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
+                    }
+                }
+            } catch (e) { console.log(e); }
+
+            if (cloudData.dishes.length === 0) {
+                let localBackup = localStorage.getItem('family_dishes_only_backup');
+                if (localBackup) {
+                    cloudData.dishes = JSON.parse(localBackup);
+                    await saveAllData();
+                }
+            }
+
+            renderDishes();
+            updateCartBar();
+            if(!document.getElementById('myOrdersModal').classList.contains('hidden')) renderMyOrdersList();
+            if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) renderFamilyOrdersList();
+        }
+
+        async function saveAllData() {
+            try {
+                if (cloudData.dishes && cloudData.dishes.length > 0) {
                     localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                 }
-            } catch (e) {
-                console.log('网络同步失败，读取本地缓存');
-            }
-
-            if (!cloudData.dishes || cloudData.dishes.length === 0) {
-                let local = localStorage.getItem('family_dishes_only_backup');
-                if (local) cloudData.dishes = JSON.parse(local);
-            }
-
-            renderDaySelector();
-            renderMenu();
-        }
-
-        window.onload = function() {
-            if (!currentUser) {
-                document.getElementById('userSetupModal').classList.remove('hidden');
-            }
-            fetchAllData();
-            setInterval(fetchAllData, 8000);
-        }
-
-        function saveUserName() {
-            let name = document.getElementById('userNameInput').value.trim();
-            if (!name) {
-                alert('请输入您的称呼！');
-                return;
-            }
-            currentUser = name;
-            localStorage.setItem('family_current_user', name);
-            document.getElementById('userSetupModal').classList.add('hidden');
-        }
-
-        function renderDaySelector() {
-            const container = document.getElementById('daySelectorContainer');
-            container.innerHTML = days.map(d => {
-                let isSelected = d === currentDay;
-                return `
-                    <button onclick="switchDay('${d}')" class="px-3 py-1.5 rounded-xl font-bold text-xs transition shrink-0 ${isSelected ? 'bg-amber-600 text-white shadow-xs' : 'bg-white text-gray-600 border border-amber-100'}">
-                        ${d}
-                    </button>
-                `;
-            }).join('');
-            document.getElementById('cartTargetDayText').innerText = currentDay;
-        }
-
-        function switchDay(day) {
-            currentDay = day;
-            renderDaySelector();
-        }
-
-        function filterCategory(cat) {
-            currentCategory = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                if (btn.innerText === cat) {
-                    btn.className = "cat-btn px-3 py-1.5 rounded-full bg-amber-600 text-white shrink-0 shadow-xs";
-                } else {
-                    btn.className = "cat-btn px-3 py-1.5 rounded-full bg-white text-gray-600 border shrink-0";
-                }
-            });
-            renderMenu();
-        }
-
-        function renderMenu() {
-            const container = document.getElementById('menuListContainer');
-            let dishes = cloudData.dishes || [];
-
-            if (currentCategory !== '全部') {
-                dishes = dishes.filter(d => d.category === currentCategory);
-            }
-
-            if (dishes.length === 0) {
-                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-xs">当前分类暂无菜品~</div>`;
-                return;
-            }
-
-            container.innerHTML = dishes.map(dish => {
-                return `
-                    <div class="bg-white rounded-2xl p-3 border border-amber-100 shadow-xs flex items-center justify-between space-x-3">
-                        <img src="${dish.image}" class="w-16 h-16 object-cover rounded-xl shrink-0">
-                        <div class="flex-1 min-w-0 space-y-1">
-                            <div class="flex items-center space-x-1.5">
-                                <h3 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h3>
-                                <span class="text-[9px] bg-amber-50 text-amber-700 px-1 py-0.2 rounded">${dish.category || '热菜'}</span>
-                            </div>
-                            <p class="text-[10px] text-gray-400 truncate">${dish.desc || ''}</p>
-                            <p class="text-xs font-extrabold text-amber-700">¥${dish.price}</p>
-                        </div>
-                        <div class="shrink-0">
-                            ${dish.options && dish.options.length > 0 ? `
-                                <button onclick="openOptionsModal(${dish.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded-xl text-xs transition">
-                                    选配菜 ➕
-                                </button>
-                            ` : `
-                                <button onclick="addSimpleDishToCart(${dish.id})" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs">
-                                    点单 ➕
-                                </button>
-                            `}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        // 打开配菜选择弹窗
-        function openOptionsModal(dishId) {
-            let dish = (cloudData.dishes || []).find(d => d.id === dishId);
-            if (!dish) return;
-            activeDishForOptions = dish;
-
-            document.getElementById('optionsDishName').innerText = `选择 ${dish.name} 的配菜`;
-            let container = document.getElementById('optionsListContainer');
-            
-            if (!dish.options || dish.options.length === 0) {
-                container.innerHTML = `<div class="text-center py-4 text-gray-400">该菜品暂无可选配菜</div>`;
-            } else {
-                container.innerHTML = dish.options.map((opt, idx) => `
-                    <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer">
-                        <div class="flex items-center space-x-2">
-                            <input type="checkbox" name="dishOption" value="${opt.name}" data-price="${opt.price}" class="w-4 h-4 text-amber-600 rounded">
-                            <span class="font-bold text-gray-800">${opt.name}</span>
-                        </div>
-                        <span class="text-amber-700 font-semibold">${opt.price > 0 ? `+¥${opt.price}` : '免费'}</span>
-                    </label>
-                `).join('');
-            }
-
-            document.getElementById('optionsModal').classList.remove('hidden');
-        }
-
-        function closeOptionsModal() {
-            document.getElementById('optionsModal').classList.add('hidden');
-            activeDishForOptions = null;
-        }
-
-        function confirmAddWithdrawnOptions() {
-            if (!activeDishForOptions) return;
-            let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
-            let selectedOptions = [];
-            let extraPrice = 0;
-
-            checkboxes.forEach(cb => {
-                selectedOptions.push(cb.value);
-                extraPrice += parseFloat(cb.dataset.price) || 0;
-            });
-
-            selectedOptions.sort(); // 排序确保组合唯一性
-            let key = `${activeDishForOptions.id}_${selectedOptions.join('_')}`;
-
-            if (!cart[key]) {
-                cart[key] = {
-                    dish: activeDishForOptions,
-                    count: 1,
-                    selectedOptions: selectedOptions,
-                    unitPrice: activeDishForOptions.price + extraPrice
-                };
-            } else {
-                cart[key].count++;
-            }
-
-            closeOptionsModal();
-            updateCartBar();
-        }
-
-        function addSimpleDishToCart(dishId) {
-            let dish = (cloudData.dishes || []).find(d => d.id === dishId);
-            if (!dish) return;
-
-            let key = `${dish.id}_`;
-            if (!cart[key]) {
-                cart[key] = {
-                    dish: dish,
-                    count: 1,
-                    selectedOptions: [],
-                    unitPrice: dish.price
-                };
-            } else {
-                cart[key].count++;
-            }
-            updateCartBar();
-        }
-
-        function updateCartBar() {
-            let totalCount = 0;
-            let totalPrice = 0;
-
-            for (let k in cart) {
-                totalCount += cart[k].count;
-                totalPrice += cart[k].unitPrice * cart[k].count;
-            }
-
-            const cartBar = document.getElementById('cartBar');
-            if (totalCount > 0) {
-                cartBar.classList.remove('hidden');
-            } else {
-                cartBar.classList.add('hidden');
-            }
-
-            document.getElementById('cartCount').innerText = totalCount;
-            document.getElementById('cartSummaryText').innerText = `已选 ${totalCount} 样菜品`;
-            document.getElementById('cartTotalPrice').innerText = totalPrice;
-            document.getElementById('modalTotalPrice').innerText = totalPrice;
-        }
-
-        function openCartPreview() {
-            const container = document.getElementById('cartModalItemsContainer');
-            let keys = Object.keys(cart);
-
-            if (keys.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-gray-400">购物车为空</div>`;
-                return;
-            }
-
-            container.innerHTML = keys.map(k => {
-                let item = cart[k];
-                return `
-                    py-2 flex justify-between items-center">
-                        <div class="space-y-0.5 min-w-0 flex-1 pr-2">
-                            <h4 class="font-bold text-gray-800 truncate">${item.dish.name}</h4>
-                            ${item.selectedOptions.length > 0 ? `<p class="text-[10px] text-emerald-700">配菜: ${item.selectedOptions.join(', ')}</p>` : ''}
-                            <p class="text-[10px] text-amber-700 font-semibold">单价: ¥${item.unitPrice}</p>
-                        </div>
-                        <div class="flex items-center space-x-2 shrink-0">
-                            <button onclick="changeCartCount('${k}', -1)" class="w-6 h-6 bg-gray-100 rounded-full font-bold">-</button>
-                            <span class="font-bold">${item.count}</span>
-                            <button onclick="changeCartCount('${k}', 1)" class="w-6 h-6 bg-amber-100 text-amber-900 rounded-full font-bold">+</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('cartModal').classList.remove('hidden');
-        }
-
-        function closeCartPreview() {
-            document.getElementById('cartModal').classList.add('hidden');
-        }
-
-        function changeCartCount(key, delta) {
-            if (cart[key]) {
-                cart[key].count += delta;
-                if (cart[key].count <= 0) {
-                    delete cart[key];
-                }
-            }
-            updateCartBar();
-            openCartPreview();
-        }
-
-        async function submitOrder() {
-            if (!currentUser) {
-                document.getElementById('userSetupModal').classList.remove('hidden');
-                return;
-            }
-
-            let keys = Object.keys(cart);
-            if (keys.length === 0) {
-                alert('请先选择要点的菜品！');
-                return;
-            }
-
-            let orderItems = keys.map(k => {
-                let item = cart[k];
-                return {
-                    id: item.dish.id,
-                    name: item.dish.name,
-                    price: item.unitPrice,
-                    count: item.count,
-                    selectedOptions: item.selectedOptions,
-                    itemTotalPrice: item.unitPrice * item.count
-                };
-            });
-
-            let totalPrice = orderItems.reduce((sum, i) => sum + i.itemTotalPrice, 0);
-
-            let newOrder = {
-                id: Date.now(),
-                user: currentUser,
-                targetDay: currentDay,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                items: orderItems,
-                totalPrice: totalPrice,
-                status: '待采购'
-            };
-
-            try {
-                let res = await fetch(API_URL + '?t=' + Date.now());
-                let json = await res.json();
-                if (json) {
-                    cloudData.dishes = json.dishes || cloudData.dishes;
-                    cloudData.orders = json.orders || [];
-                }
-            } catch (e) {
-                console.log('同步云端最新数据失败');
-            }
-
-            cloudData.orders.push(newOrder);
-
-            try {
                 await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cloudData)
                 });
-                alert(`🎉 成功提交给大厨（${currentDay}）！`);
-                cart = {};
-                updateCartBar();
-            } catch (e) {
-                alert('提交失败，请检查网络！');
-            }
+            } catch (e) { alert('云端同步失败！'); }
         }
 
-        async function openUserOrdersModal() {
-            document.getElementById('userOrdersModal').classList.remove('hidden');
-            const container = document.getElementById('userOrdersContainer');
-            container.innerHTML = `<div class="text-center py-6 text-gray-400">正在获取记录...</div>`;
+        window.onload = function() {
+            updateUIStrings();
+            let savedUser = localStorage.getItem('family_order_user');
+            if (savedUser) {
+                currentUser = savedUser;
+                document.getElementById('currentLoginUserDisplay').innerText = (currentLang === 'zh' ? '点菜人: ' : 'User: ') + currentUser;
+                document.getElementById('switchUserBtnText').innerText = currentUser;
+                document.getElementById('userModal').classList.add('hidden');
+            } else {
+                openUserModal();
+            }
+            fetchAllData();
+            setInterval(fetchAllData, 8000);
+        }
 
-            try {
-                let res = await fetch(API_URL + '?t=' + Date.now());
-                let json = await res.json();
-                if (json && json.orders) {
-                    cloudData.orders = json.orders;
+        function openUserModal() {
+            document.getElementById('userNameInput').value = currentUser || '';
+            document.getElementById('userModal').classList.remove('hidden');
+        }
+
+        function saveUser() {
+            let name = document.getElementById('userNameInput').value.trim();
+            if (!name) return alert('请输入名字！');
+            currentUser = name;
+            localStorage.setItem('family_order_user', currentUser);
+            document.getElementById('currentLoginUserDisplay').innerText = (currentLang === 'zh' ? '点菜人: ' : 'User: ') + currentUser;
+            document.getElementById('switchUserBtnText').innerText = currentUser;
+            document.getElementById('userModal').classList.add('hidden');
+        }
+
+        function selectDay(day) {
+            selectedDay = day;
+            document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(day));
+            document.querySelectorAll('.day-btn').forEach(btn => {
+                btn.className = btn.getAttribute('data-day') === day ? "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" : "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+            });
+            renderDishes();
+        }
+
+        function filterCategory(cat) {
+            selectedCategory = cat;
+            const catMap = { '全部': 'cat-all', '热菜': 'cat-hot', '凉菜': 'cat-cold', '主食/汤品': 'cat-soup', '饮品/甜点': 'cat-drink' };
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.className = btn.id === catMap[cat] ? "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" : "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+            });
+            renderDishes();
+        }
+
+        function renderDishes() {
+            const container = document.getElementById('dishListContainer');
+            let dishes = cloudData.dishes || [];
+            if (selectedCategory !== '全部') dishes = dishes.filter(d => (d.category || '热菜') === selectedCategory);
+
+            container.innerHTML = dishes.map(dish => {
+                let displayName = translateDishName(dish.name);
+                let displayCat = translateCategory(dish.category || '热菜');
+                
+                // 检查该菜品是否有配菜子选项 (options 或 subOptions 数组)
+                let subOptions = dish.options || dish.subOptions || [];
+                
+                let cartKey = dish.id;
+                let selectedSub = '';
+                if (subOptions.length > 0) {
+                    let selectElId = `sub-select-${dish.id}`;
+                    let currentSelectedSub = window['temp_sub_' + dish.id] || subOptions[0];
+                    cartKey = `${dish.id}_${currentSelectedSub}`;
                 }
-            } catch (e) {}
 
-            let orders = cloudData.orders || [];
-            if (orders.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-gray-400">暂无任何点单记录</div>`;
-                return;
-            }
+                let count = cart[cartKey] || 0;
 
-            container.innerHTML = orders.map(order => `
-                <div class="bg-amber-50/60 border border-amber-200 p-2.5 rounded-xl space-y-1">
-                    <div class="flex justify-between items-center text-[10px] text-gray-400 border-b pb-1">
-                        <span class="font-bold text-amber-900">${order.user} (${order.targetDay})</span>
-                        <span>${order.time || ''}</span>
-                    </div>
-                    <div class="space-y-1 py-0.5">
-                        ${order.items.map(i => `
-                            <div class="flex justify-between text-xs">
-                                <div>
-                                    <span class="font-bold">${i.name} x${i.count}</span>${i.selectedOptions && i.selectedOptions.length > 0 ? `<div class="text-[10px] text-emerald-700">配菜: ${i.selectedOptions.join(', ')}</div>` : ''}
+                let subOptionsHtml = '';
+                if (subOptions.length > 0) {
+                    subOptionsHtml = `
+                        <div class="mt-1 flex items-center space-x-1">
+                            <span class="text-[10px] text-amber-800 font-semibold">${currentLang === 'zh' ? '配菜/口味:' : 'Option:'}</span>
+                            <select id="sub-select-${dish.id}" onchange="onSubOptionChange(${dish.id}, this.value)" class="bg-amber-50 border border-amber-200 text-amber-900 text-[10px] rounded px-1.5 py-0.5 outline-none font-medium">
+                                ${subOptions.map(opt => `<option value="${opt}" ${((window['temp_sub_' + dish.id] \vert{}\vert{} subOptions[0]) === opt) ? 'selected' : ''}>${opt}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div class="bg-white rounded-2xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <img src="${dish.image}" onclick="openImageModal('${dish.image}', '${displayName}')" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0 cursor-pointer hover:opacity-95 transition" title="点击查看大图">
+                            <div class="space-y-0.5 flex-1 min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <h3 class="font-bold text-xs text-gray-800 truncate">${displayName}</h3>
+                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded font-medium shrink-0">${displayCat}</span>
                                 </div>
-                                <span class="font-bold">¥${i.itemTotalPrice}</span>
+                                <p class="text-[10px] text-gray-400 truncate">${dish.desc || ''}</p>
+                                <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
+                                ${subOptionsHtml}
                             </div>
-                        `).join('')}
+                        </div>
+                        <div class="flex items-center space-x-1.5 shrink-0 ml-2">
+                            ${count > 0 ? `<button onclick="changeCart('${cartKey}', -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center font-bold"><i class="fa-solid fa-minus text-[10px]"></i></button><span class="font-bold text-xs w-4 text-center">${count}</span>` : ''}
+                            <button onclick="changeCart('${cartKey}', 1)" class="w-7 h-7 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold shadow-sm"><i class="fa-solid fa-plus text-[10px]"></i></button>
+                        </div>
                     </div>
-                    <div class="flex justify-between items-center pt-1 border-t text-[10px]">
-                        <span class="px-2 py-0.5 rounded-full font-bold ${order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800')}">${order.status || '待采购'}</span>
-                        <span class="font-bold text-amber-900">总计: ¥${order.totalPrice}</span>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function closeUserOrdersModal() {
-            document.getElementById('userOrdersModal').classList.add('hidden');
+        function onSubOptionChange(dishId, value) {
+            window['temp_sub_' + dishId] = value;
+            renderDishes();
+        }
+
+        function openImageModal(url, title) {
+            document.getElementById('enlargedImg').src = url;
+            document.getElementById('enlargedTitle').innerText = title || '';
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
+        }
+
+        function changeCart(cartKey, delta) {
+            if (!cart[cartKey]) cart[cartKey] = 0;
+            cart[cartKey] += delta;
+            if (cart[cartKey] <= 0) delete cart[cartKey];
+            renderDishes();
+            updateCartBar();
+        }
+
+        function updateCartBar() {
+            const bar = document.getElementById('cartBar');
+            let totalCount = 0, totalPrice = 0, previewHtml = '';
+            let dishMap = {};
+            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
+
+            for (let cartKey in cart) {
+                let count = cart[cartKey];
+                // 解析 cartKey，格式可能是 dishId 或者 dishId_subOption
+                let parts = cartKey.split('_');
+                let dishId = parts[0];
+                let subOption = parts.length > 1 ? parts.slice(1).join('_') : '';
+                
+                let dish = dishMap[dishId];
+                if (dish) {
+                    totalCount += count;
+                    totalPrice += dish.price * count;
+                    let subText = subOption ? ` (${subOption})` : '';
+                    previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(dish.name)}${subText} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
+                }
+            }
+
+            if (totalCount > 0) {
+                bar.classList.remove('hidden');
+                document.getElementById('cartCount').innerText = totalCount;
+                document.getElementById('cartTotalPrice').innerText = totalPrice;
+                document.getElementById('cartDayLabel').innerText = t(getDayKeyMap(selectedDay));
+                document.getElementById('cartItemsPreview').innerHTML = previewHtml;
+            } else { bar.classList.add('hidden'); }
+        }
+
+        async function submitOrder() {
+            if (!currentUser) return openUserModal();
+            let dishMap = {};
+            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
+            let items = [], totalPrice = 0;
+            
+            for (let cartKey in cart) {
+                let parts = cartKey.split('_');
+                let dishId = parts[0];
+                let subOption = parts.length > 1 ? parts.slice(1).join('_') : '';
+                let dish = dishMap[dishId];
+                
+                if (dish) {
+                    items.push({ 
+                        id: dish.id, 
+                        name: dish.name, 
+                        subOption: subOption, 
+                        price: dish.price, 
+                        count: cart[cartKey] 
+                    });
+                    totalPrice += dish.price * cart[cartKey];
+                }
+            }
+            if (items.length === 0) return;
+
+            const newOrder = {
+                id: Date.now(),
+                user: currentUser,
+                targetDay: selectedDay,
+                items: items,
+                totalPrice: totalPrice,
+                status: '待采购', 
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+
+            await fetchAllData();
+            if (!cloudData.orders) cloudData.orders = [];
+            cloudData.orders.unshift(newOrder);
+            await saveAllData();
+            cart = {};
+            updateCartBar();
+            renderDishes();
+            alert((currentLang === 'zh' ? '成功为【' : 'Successfully booked for ') + t(getDayKeyMap(selectedDay)) + (currentLang === 'zh' ? '】提交订单！' : '!'));
+        }
+
+        function openFamilyOrdersModal() {
+            document.getElementById('familyOrdersModal').classList.remove('hidden');
+            renderFamilyOrdersList();
+        }
+        function closeFamilyOrdersModal() { document.getElementById('familyOrdersModal').classList.add('hidden'); }
+
+        function renderFamilyOrdersList() {
+            const container = document.getElementById('familyOrdersListContainer');
+            const orders = cloudData.orders || [];
+            if (orders.length === 0) return container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">${currentLang === 'zh' ? '暂无点单记录~' : 'No orders yet~'}</div>`;
+
+            const daysOrder = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            let groupedByDay = {};
+            daysOrder.forEach(d => { groupedByDay[d] = []; });
+            orders.forEach(o => { if (groupedByDay[o.targetDay || '周一']) groupedByDay[o.targetDay || '周一'].push(o); });
+
+            let html = '';
+            daysOrder.forEach(day => {
+                let dayOrders = groupedByDay[day];
+                if (dayOrders.length > 0) {
+                    html += `<div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl space-y-2"><div class="flex justify-between items-center border-b border-amber-200 pb-1.5"><span class="font-bold text-xs text-amber-900">${t(getDayKeyMap(day))}</span><span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">${dayOrders.length} ${currentLang === 'zh' ? '单' : 'orders'}</span></div><div class="space-y-2">`;
+                    dayOrders.forEach(order => {
+                        let statusText = order.status === '已完成' ? t('status_completed') : (order.status === '已采购' ? t('status_purchased') : t('status_pending'));
+                        let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800');
+                        html += `
+                            <div class="bg-white p-2.5 rounded-lg border space-y-1 shadow-xs">
+                                <div class="flex justify-between items-center text-[11px]">
+                                    <span class="bg-amber-600 text-white px-1.5 py-0.2 rounded font-bold">${order.user}</span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded font-bold ${statusColor}">${statusText}</span>
+                                </div>
+                                <div class="space-y-0.5 text-xs text-gray-700">
+                                    ${order.items.map(i => {
+                                        let subText = i.subOption ? ` (${i.subOption})` : '';
+                                        return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div></div>`;
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function openMyOrdersModal() {
+            if (!currentUser) return openUserModal();
+            document.getElementById('myOrdersModal').classList.remove('hidden');
+            renderMyOrdersList();
+        }
+        function closeMyOrdersModal() { document.getElementById('myOrdersModal').classList.add('hidden'); }
+
+        function renderMyOrdersList() {
+            const container = document.getElementById('myOrdersListContainer');
+            const myOrders = (cloudData.orders || []).filter(o => o.user === currentUser);
+            if (myOrders.length === 0) return container.innerHTML = `<div class="text-center py-8 text-gray-400 text-xs">${currentLang === 'zh' ? '你还没有提交过预定单~' : 'You have no bookings~'}</div>`;
+
+            container.innerHTML = myOrders.map(order => {
+                let statusText = order.status === '已完成' ? t('status_completed') : (order.status === '已采购' ? t('status_purchased') : t('status_pending'));
+                let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800');
+                return `
+                    <div class="bg-amber-50/50 border border-amber-200 p-3 rounded-xl space-y-1.5">
+                        <div class="flex justify-between items-center border-b border-amber-100 pb-1">
+                            <span class="font-bold text-xs text-amber-900">${t(getDayKeyMap(order.targetDay || '周一'))}</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColor}">${statusText}</span>
+                        </div>
+                        <div class="space-y-0.5 text-xs text-gray-700">
+                            ${order.items.map(i => {
+                                let subText = i.subOption ? ` (${i.subOption})` : '';
+                                return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`;
+                            }).join('')}
+                        </div>
+                        <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
+                            <span class="text-gray-400">${order.time || ''}</span>
+                            <span class="font-bold text-amber-900">${currentLang === 'zh' ? '总计' : 'Total'}: ¥${order.totalPrice}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
     </script>
 </body>
