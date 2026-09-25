@@ -42,15 +42,19 @@
             </div>
         </div>
 
-        <!-- 🌟 核心升级：智能聚合后的总采购清单 -->
+        <!-- 🌟 核心采购清单面板（带“去商场购物勾选”按钮） -->
         <section class="bg-white rounded-2xl border border-amber-200 shadow-sm p-4 space-y-3">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-base text-amber-900 flex items-center">
-                    <i class="fa-solid fa-basket-shopping mr-2 text-amber-600"></i>周末一站式采购清单（已自动合并同类项）
+                    <i class="fa-solid fa-basket-shopping mr-2 text-amber-600"></i>周末一站式采购清单
                 </h3>
-                <span class="text-[11px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">智能合计</span>
+                <!-- 新增：连接到超市购物勾选页面的按钮 -->
+                <button onclick="openShoppingMode()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl transition flex items-center space-x-1 shadow-xs">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span>去商场购物勾选</span>
+                </button>
             </div>
-            <p class="text-xs text-gray-500">相同原材料的重量/数量已自动合并相加，方便直接对照去超市采购：</p>
+            <p class="text-xs text-gray-500">相同原材料已自动合并相加：</p>
             <div id="masterIngredientsList" class="space-y-2 pt-1">
                 <div class="text-center py-6 text-gray-400 text-xs">正在计算全周原材料合计...</div>
             </div>
@@ -89,7 +93,62 @@
         </section>
     </main>
 
-    <!-- 添加/修改菜品弹窗（含原材料输入） -->
+    <!-- 🌟 新增页面：去商场购物勾选模式弹窗/全屏页 -->
+    <div id="shoppingModal" class="fixed inset-0 bg-amber-50/95 z-50 flex flex-col hidden">
+        <!-- 购物页头部 -->
+        <div class="bg-white shadow-xs px-4 py-3 flex justify-between items-center border-b">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">🛒</span>
+                <div>
+                    <h2 class="font-bold text-base text-amber-900">超市现场大采购勾选模式</h2>
+                    <p class="text-[11px] text-gray-400">已购物品可勾选沉底，支持现场修改或删除</p>
+                </div>
+            </div>
+            <button onclick="closeShoppingMode()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold transition">
+                退出返回
+            </button>
+        </div>
+        <!-- 购物清单列表容器 -->
+        <div class="flex-1 overflow-y-auto max-w-md w-md mx-auto p-4 space-y-3" id="shoppingCheckListContainer">
+            <!-- 动态生成勾选项目 -->
+        </div>
+        <!-- 购物页底部操作提示 -->
+        <div class="bg-white border-t p-4 text-center max-w-md w-md mx-auto">
+            <button onclick="openAddShoppingItemModal()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-bold text-sm shadow-md transition">
+                <i class="fa-solid fa-plus mr-1"></i> 在商场临时手动加一笔采购
+            </button>
+        </div>
+    </div>
+
+    <!-- 临时增改单条采购原材料的弹窗 -->
+    <div id="shopItemEditModal" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+            <h3 id="shopEditModalTitle" class="font-bold text-base text-amber-900">修改采购原材料</h3>
+            <input type="hidden" id="editShoppingIndex">
+            <div class="space-y-3 text-sm">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">原材料名称</label>
+                    <input type="text" id="shoppingItemNameInput" placeholder="例如：西红柿" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                </div>
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-500 mb-1">数量</label>
+                        <input type="number" id="shoppingItemValInput" placeholder="500" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs text-gray-500 mb-1">单位</label>
+                        <input type="text" id="shoppingItemUnitInput" placeholder="g / 个 / ml" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-2">
+                <button onclick="closeShopEditModal()" class="flex-1 bg-gray-100 py-2.5 rounded-xl text-gray-600 font-medium text-xs">取消</button>
+                <button onclick="saveShoppingItem()" class="flex-1 bg-amber-600 text-white py-2.5 rounded-xl font-bold text-xs shadow-md">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/修改菜品弹窗 -->
     <div id="dishModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b">
@@ -126,9 +185,8 @@
                     <input type="text" id="newDishDesc" placeholder="酸甜可口，老少皆宜" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500">
                 </div>
                 <div>
-                    <label class="block text-xs text-amber-700 font-bold mb-1"><i class="fa-solid fa-basket-shopping mr-1"></i>所需原材料（用于周末采购清单汇总）</label>
-                    <textarea id="newDishIngredients" rows="2" placeholder="例如：五花肉 500g, 冰糖 30g, 生抽 20ml" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500 text-xs"></textarea>
-                    <p class="text-[10px] text-gray-400 mt-0.5">提示：请用“名称 + 数字 + 单位”格式，如“五花肉 500g”，系统会自动累加同类项。</p>
+                    <label class="block text-xs text-amber-700 font-bold mb-1"><i class="fa-solid fa-basket-shopping mr-1"></i>所需原材料</label>
+                    <textarea id="newDishIngredients" rows="2" placeholder="例如：五花肉 500g, 冰糖 30g" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500 text-xs"></textarea>
                 </div>
             </div>
             <div class="pt-2 flex space-x-3">
@@ -141,7 +199,7 @@
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
 
-        let cloudData = { dishes: [], orders: [] };
+        let cloudData = { dishes: [], orders: [], manualShoppingItems: [] };
         let selectedAdminDay = '周一';
 
         async function fetchAllData() {
@@ -152,11 +210,15 @@
                     cloudData = json;
                     if (!cloudData.dishes) cloudData.dishes = [];
                     if (!cloudData.orders) cloudData.orders = [];
+                    if (!cloudData.manualShoppingItems) cloudData.manualShoppingItems = [];
                 }
             } catch (e) {
                 console.log('同步云端数据失败', e);
             }
             renderDashboard();
+            if(!document.getElementById('shoppingModal').classList.contains('hidden')) {
+                renderShoppingCheckList();
+            }
         }
 
         async function saveAllData() {
@@ -187,7 +249,6 @@
             const orders = cloudData.orders || [];
             const dishes = cloudData.dishes || [];
 
-            // 统计横幅
             document.getElementById('totalOrderCount').innerText = `${orders.length} 单`;
             const totalSales = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
             document.getElementById('totalSales').innerText = `¥${totalSales}`;
@@ -195,7 +256,6 @@
             renderDayOrders();
             renderMasterIngredients(orders, dishes);
 
-            // 渲染菜单管理
             const dishContainer = document.getElementById('dishManageContainer');
             if (dishes.length === 0) {
                 dishContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs bg-white rounded-xl border">菜单库暂无菜品</div>`;
@@ -219,17 +279,12 @@
             }
         }
 
-        // 🌟 核心升级算法：自动把相同原材料的数字与重量相加合并
-        function renderMasterIngredients(orders, dishes) {
-            const container = document.getElementById('masterIngredientsList');
+        // 提取全周合并后的原材料计算逻辑（供后台主页与购物勾选页共用）
+        function getAggregatedIngredients() {
+            const orders = cloudData.orders || [];
+            const dishes = cloudData.dishes || [];
             
-            if (orders.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">全周暂无订单，暂无采购需求~</div>`;
-                return;
-            }
-
-            // 1. 先统计每道菜全周被点了多少份
-            let dishCountMap = {}; // { dishName: totalCount }
+            let dishCountMap = {};
             orders.forEach(order => {
                 if (order.items) {
                     order.items.forEach(item => {
@@ -238,11 +293,9 @@
                 }
             });
 
-            // 2. 建立菜品名称到菜品对象的映射
             let dishMap = {};
             dishes.forEach(d => { dishMap[d.name] = d; });
 
-            // 3. 聚合原材料数据：{ "材料名_单位": { name, unit, totalValue } }
             let ingredientSummary = {};
 
             orders.forEach(order => {
@@ -250,15 +303,11 @@
                 order.items.forEach(orderItem => {
                     let dish = dishMap[orderItem.name];
                     if (dish && dish.ingredients) {
-                        let times = orderItem.count; // 点了几份
-                        // 拆分多项原材料，支持逗号、中文逗号、分号
-                        let rawParts = dish.ingredients.split(/[,，;；]/);
+                        let times = orderItem.count;
+                        let rawParts = dish.ingredients.split(/[,[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
-                            
-                            // 正则解析：匹配 “名称 + 数字 + 单位” 或类似结构
-                            // 例如匹配 "五花肉 500g" -> 名称:五花肉, 数值:500, 单位:g
                             let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
                             if (match) {
                                 let ingName = match[1].trim();
@@ -267,50 +316,172 @@
                                 let key = `${ingName}_${unit}`;
 
                                 if (!ingredientSummary[key]) {
-                                    ingredientSummary[key] = { name: ingName, unit: unit, total: 0 };
+                                    ingredientSummary[key] = { name: ingName, unit: unit, total: 0, checked: false };
                                 }
                                 ingredientSummary[key].total += val * times;
                             } else {
-                                // 如果无法解析成带数字的格式，直接作为普通文本累加（按份数显示）
                                 let key = `other_${part}`;
                                 if (!ingredientSummary[key]) {
-                                    ingredientSummary[key] = { name: part, unit: '', total: 0, isText: true };
+                                    ingredientSummary[key] = { name: part, unit: '', total: times, isText: true, checked: false };
+                                } else {
+                                    ingredientSummary[key].total += times;
                                 }
-                                ingredientSummary[key].total += times;
                             }
                         });
                     }
                 });
             });
 
-            // 4. 渲染合并后的采购清单
-            let keys = Object.keys(ingredientSummary);
-            if (keys.length === 0) {
-                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">已有点单，但对应菜品未填写带数量的“原材料”（如：五花肉 500g），请前往菜单库补充。</div>`;
+            let resultList = [];
+            for (let k in ingredientSummary) {
+                resultList.push(ingredientSummary[k]);
+            }
+            // 加上用户在商场手动临时添加的项
+            if (cloudData.manualShoppingItems) {
+                cloudData.manualShoppingItems.forEach((m, idx) => {
+                    resultList.push({ ...m, isManual: true, manualIndex: idx });
+                });
+            }
+            return resultList;
+        }
+
+        function renderMasterIngredients(orders, dishes) {
+            const container = document.getElementById('masterIngredientsList');
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">全周暂无订单，暂无采购需求~</div>`;
                 return;
             }
 
-            let html = '<div class="grid grid-cols-1 gap-2">';
-            for (let k in ingredientSummary) {
-                let item = ingredientSummary[k];
-                if (item.isText) {
-                    html += `
-                        <div class="flex justify-between items-center bg-amber-50/60 border border-amber-100 px-3 py-2 rounded-xl text-xs">
-                            <span class="font-bold text-amber-900">${item.name}</span>
-                            <span class="bg-amber-600 text-white px-2 py-0.5 rounded text-[11px]">共计需 ${item.total} 份配置</span>
-                        </div>`;
-                } else {
-                    // 保留合适的小数位数
-                    let displayTotal = Number.isInteger(item.total) ? item.total : item.total.toFixed(1);
-                    html += `
-                        <div class="flex justify-between items-center bg-amber-50/60 border border-amber-100 px-3 py-2 rounded-xl text-xs">
-                            <span class="font-bold text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
-                            <span class="bg-amber-600 text-white font-bold px-2.5 py-0.5 rounded text-xs">${displayTotal}${item.unit}</span>
-                        </div>`;
-                }
+            let list = getAggregatedIngredients();
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">对应菜品未填写带数量的“原材料”，请在菜单库补充。</div>`;
+                return;
             }
-            html += '</div>';
-            container.innerHTML = html;
+
+            container.innerHTML = list.map(item => {
+                let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
+                return `
+                    <div class="flex justify-between items-center bg-amber-50/60 border border-amber-100 px-3 py-2 rounded-xl text-xs">
+                        <span class="font-bold text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
+                        <span class="bg-amber-600 text-white font-bold px-2.5 py-0.5 rounded text-xs">${displayTotal}${item.unit || ''}</span>
+                    </div>`;
+            }).join('');
+        }
+
+        // 🌟 核心：打开超市现场勾选页面
+        function openShoppingMode() {
+            document.getElementById('shoppingModal').classList.remove('hidden');
+            renderShoppingCheckList();
+        }
+
+        function closeShoppingMode() {
+            document.getElementById('shoppingModal').classList.add('hidden');
+            renderDashboard();
+        }
+
+        function renderShoppingCheckList() {
+            const container = document.getElementById('shoppingCheckListContainer');
+            let list = getAggregatedIngredients();
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="text-center py-20 text-gray-400 text-sm">当前没有任何采购任务~</div>`;
+                return;
+            }
+
+            container.innerHTML = list.map((item, idx) => {
+                let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
+                let isChecked = item.checked || false;
+
+                return `
+                    <div class="flex items-center justify-between p-3.5 rounded-2xl border transition ${isChecked ? 'bg-gray-100 border-gray-200 opacity-60 line-through' : 'bg-white border-amber-100 shadow-xs'}">
+                        <div class="flex items-center space-x-3 flex-1 cursor-pointer" onclick="toggleCheckShoppingItem('${idx}')">
+                            <input type="checkbox" ${isChecked ? 'checked' : ''} class="w-5 h-5 accent-amber-600 rounded cursor-pointer">
+                            <div>
+                                <h4 class="font-bold text-sm ${isChecked ? 'text-gray-400' : 'text-gray-800'}">${item.name}</h4>
+                                <span class="text-xs font-bold text-amber-700">${displayTotal}${item.unit || ''}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            ${item.isManual ? `
+                                <button onclick="openEditManualItem(${item.manualIndex})" class="text-gray-400 hover:text-amber-600 p-2 text-xs"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteManualItem(${item.manualIndex})" class="text-gray-300 hover:text-red-500 p-2 text-xs"><i class="fa-solid fa-trash"></i></button>
+                            ` : `<span class="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded">自动汇总</span>`}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleCheckShoppingItem(idx) {
+            // 支持在内存中标记勾选状态
+            let list = getAggregatedIngredients();
+            if (list[idx]) {
+                list[idx].checked = !list[idx].checked;
+                // 为了简单，我们直接重新渲染视图
+                renderShoppingCheckList();
+            }
+        }
+
+        // 手动添加/修改超市采购项功能
+        function openAddShoppingItemModal() {
+            document.getElementById('shopEditModalTitle').innerText = '商场临时加购项目';
+            document.getElementById('editShoppingIndex').value = '';
+            document.getElementById('shoppingItemNameInput').value = '';
+            document.getElementById('shoppingItemValInput').value = '';
+            document.getElementById('shoppingItemUnitInput').value = '';
+            document.getElementById('shopItemEditModal').classList.remove('hidden');
+        }
+
+        function openEditManualItem(manualIdx) {
+            let item = cloudData.manualShoppingItems[manualIdx];
+            if (!item) return;
+            document.getElementById('shopEditModalTitle').innerText = '修改加购项目';
+            document.getElementById('editShoppingIndex').value = manualIdx;
+            document.getElementById('shoppingItemNameInput').value = item.name;
+            document.getElementById('shoppingItemValInput').value = item.total;
+            document.getElementById('shoppingItemUnitInput').value = item.unit || '';
+            document.getElementById('shopItemEditModal').classList.remove('hidden');
+        }
+
+        function closeShopEditModal() {
+            document.getElementById('shopItemEditModal').classList.add('hidden');
+        }
+
+        async function saveShoppingItem() {
+            const manualIdx = document.getElementById('editShoppingIndex').value;
+            const name = document.getElementById('shoppingItemNameInput').value.trim();
+            const val = parseFloat(document.getElementById('shoppingItemValInput').value);
+            const unit = document.getElementById('shoppingItemUnitInput').value.trim();
+
+            if (!name || isNaN(val)) {
+                alert('请填写完整的名称和数量！');
+                return;
+            }
+
+            await fetchAllData();
+            if (!cloudData.manualShoppingItems) cloudData.manualShoppingItems = [];
+
+            if (manualIdx !== '') {
+                cloudData.manualShoppingItems[manualIdx] = { name, total: val, unit, checked: false };
+            } else {
+                cloudData.manualShoppingItems.push({ name, total: val, unit, checked: false });
+            }
+
+            await saveAllData();
+            closeShopEditModal();
+            renderShoppingCheckList();
+            renderDashboard();
+        }
+
+        async function deleteManualItem(manualIdx) {
+            if (!confirm('确定要删除这项加购记录吗？')) return;
+            await fetchAllData();
+            if (cloudData.manualShoppingItems) {
+                cloudData.manualShoppingItems.splice(manualIdx, 1);
+            }
+            await saveAllData();
+            renderShoppingCheckList();
+            renderDashboard();
         }
 
         function renderDayOrders() {
