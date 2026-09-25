@@ -121,8 +121,9 @@
     <!-- 临时加购 / 修改原材料弹窗 -->
     <div id="manualItemModal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
-            <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">临时加买原材料</h3>
+            <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">修改采购项目</h3>
             <input type="hidden" id="editManualKey">
+            <input type="hidden" id="editItemType">
             <div class="space-y-2.5 text-xs">
                 <div>
                     <label class="text-gray-500 block mb-1">原材料名称</label>
@@ -195,7 +196,7 @@
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
 
-        let cloudData = { dishes: [], orders: [], checkedIngredients: {}, manualIngredients: [] };
+        let cloudData = { dishes: [], orders: [], checkedIngredients: {}, manualIngredients: [], ingredientOverrides: {} };
         let currentTab = 'summary';
 
         async function fetchAllData() {
@@ -203,13 +204,12 @@
                 let res = await fetch(API_URL + '?t=' + Date.now());
                 let json = await res.json();
                 if (json) {
-                    // 保证所有字段安全
                     cloudData.dishes = json.dishes || [];
                     cloudData.orders = json.orders || [];
                     cloudData.checkedIngredients = json.checkedIngredients || {};
                     cloudData.manualIngredients = json.manualIngredients || [];
+                    cloudData.ingredientOverrides = json.ingredientOverrides || {};
 
-                    // 如果云端有菜品，单独把菜品存入本地备份
                     if (cloudData.dishes.length > 0) {
                         localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                     }
@@ -218,12 +218,10 @@
                 console.log('网络同步失败', e);
             }
 
-            // 🛡️ 只有当云端菜品真正为空时，才从本地【仅菜品备份】中恢复，绝对不影响 orders 订单！
             if (cloudData.dishes.length === 0) {
                 let localBackup = localStorage.getItem('family_dishes_only_backup');
                 if (localBackup) {
                     cloudData.dishes = JSON.parse(localBackup);
-                    console.log('云端菜品为空，已自动从本地恢复菜品库（保留订单）！');
                     await saveAllData();
                 }
             }
@@ -301,7 +299,7 @@
                     let dish = dishMap[orderItem.id];
                     if (dish && dish.ingredients) {
                         let times = orderItem.count;
-                        let rawParts = dish.ingredients.split(/[,[,，;；]/);
+                        let rawParts = dish.ingredients.split(/[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
@@ -329,7 +327,26 @@
                 });
             });
 
-            let list = Object.values(ingredientSummary);
+            let list = [];
+            // 处理自动汇总项（应用覆盖或删除规则）
+            for (let key in ingredientSummary) {
+                let item = ingredientSummary[key];
+                if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key]) {
+                    let override = cloudData.ingredientOverrides[key];
+                    if (override.deleted) continue; // 如果被删除了则跳过
+                    list.push({
+                        key: key,
+                        name: override.name,
+                        unit: override.unit,
+                        total: override.total,
+                        isAuto: true
+                    });
+                } else {
+                    list.push(item);
+                }
+            }
+
+            // 处理用户额外手动加购项
             if (cloudData.manualIngredients) {
                 cloudData.manualIngredients.forEach(m => {
                     list.push({
@@ -590,12 +607,8 @@
                             </div>
                         </div>
                         <div class="flex items-center space-x-1 shrink-0 ml-2">
-                            ${item.isManual ? `
-                                <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}')" class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-pen"></i></button>
-                                <button onclick="deleteManualItem('${item.key}')" class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
-                            ` : `
-                                <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}')" class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-xs" title="调整数量"><i class="fa-solid fa-pen"></i></button>
-                            `}
+                            <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}', ${item.isManual ? 'true' : 'false'})" class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-xs" title="修改"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteSupermarketItem('${item.key}', ${item.isManual ? 'true' : 'false'})" class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs" title="删除"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
                 `;
@@ -612,15 +625,17 @@
         function openAddManualShoppingItem() {
             document.getElementById('manualModalTitle').innerText = '临时加买原材料';
             document.getElementById('editManualKey').value = '';
+            document.getElementById('editItemType').value = 'manual';
             document.getElementById('manualNameInput').value = '';
             document.getElementById('manualTotalInput').value = '';
             document.getElementById('manualUnitInput').value = '';
             document.getElementById('manualItemModal').classList.remove('hidden');
         }
 
-        function openEditManualItem(key, name = '', total = '', unit = '') {
+        function openEditManualItem(key, name = '', total = '', unit = '', isManual = false) {
             document.getElementById('manualModalTitle').innerText = '修改采购项目';
             document.getElementById('editManualKey').value = key;
+            document.getElementById('editItemType').value = isManual ? 'manual' : 'auto';
             document.getElementById('manualNameInput').value = name;
             document.getElementById('manualTotalInput').value = total;
             document.getElementById('manualUnitInput').value = unit;
@@ -633,6 +648,7 @@
 
         async function saveManualItem() {
             let key = document.getElementById('editManualKey').value;
+            let itemType = document.getElementById('editItemType').value;
             let name = document.getElementById('manualNameInput').value.trim();
             let total = parseFloat(document.getElementById('manualTotalInput').value);
             let unit = document.getElementById('manualUnitInput').value.trim();
@@ -643,23 +659,23 @@
             }
 
             await fetchAllData();
-            if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
 
-            if (key && key.startsWith('manual_')) {
+            if (itemType === 'manual') {
+                if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
                 let item = cloudData.manualIngredients.find(m => m.key === key);
                 if (item) {
                     item.name = name;
                     item.total = total;
                     item.unit = unit;
+                } else {
+                    let newKey = 'manual_' + Date.now();
+                    cloudData.manualIngredients.push({ key: newKey, name: name, total: total, unit: unit });
                 }
             } else {
-                let newKey = 'manual_' + Date.now();
-                cloudData.manualIngredients.push({
-                    key: newKey,
-                    name: name,
-                    total: total,
-                    unit: unit
-                });
+                // 自动汇总项的修改：通过覆盖机制直接更新名称、单位和目标总数
+                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
+                // 计算当前原本自动计算的差额或者直接覆盖总量
+                cloudData.ingredientOverrides[key] = { name: name, unit: unit, total: total, deleted: false };
             }
 
             await saveAllData();
@@ -668,15 +684,25 @@
             renderSummaryIngredients();
         }
 
-        async function deleteManualItem(key) {
-            if (!confirm('确定要删除这项采购记录吗？')) return;
+        async function deleteSupermarketItem(key, isManual = false) {
+            if (!confirm('确定要从采购清单中删除这一项吗？')) return;
             await fetchAllData();
-            if (cloudData.manualIngredients) {
-                cloudData.manualIngredients = cloudData.manualIngredients.filter(m => m.key !== key);
+
+            if (isManual) {
+                if (cloudData.manualIngredients) {
+                    cloudData.manualIngredients = cloudData.manualIngredients.filter(m => m.key !== key);
+                }
+            } else {
+                // 自动汇总项的删除：标记为 deleted
+                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
+                if (!cloudData.ingredientOverrides[key]) cloudData.ingredientOverrides[key] = {};
+                cloudData.ingredientOverrides[key].deleted = true;
             }
+
             if (cloudData.checkedIngredients) {
                 delete cloudData.checkedIngredients[key];
             }
+
             await saveAllData();
             renderSupermarketList();
             renderSummaryIngredients();
