@@ -15,16 +15,23 @@
             <span class="text-2xl">🍲</span>
             <h1 class="font-bold text-base text-amber-900">温馨家庭点餐</h1>
         </div>
-        <div class="flex items-center bg-amber-100/60 px-3 py-1.5 rounded-full text-sm">
-            <i class="fa-solid fa-user text-amber-700 mr-1.5"></i>
-            <select id="userSelect" class="bg-transparent font-medium text-amber-900 outline-none">
-                <option value="爸爸">爸爸</option>
-                <option value="妈妈">妈妈</option>
-                <option value="大宝">大宝</option>
-                <option value="二宝">二宝</option>
-                <option value="爷爷">爷爷</option>
-                <option value="奶奶">奶奶</option>
-            </select>
+        <div class="flex items-center space-x-2">
+            <!-- 查看今日已点菜单按钮 -->
+            <button onclick="toggleHistoryModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-medium px-3 py-2 rounded-full border border-amber-200 transition flex items-center space-x-1">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span>查看已点</span>
+            </button>
+            <div class="flex items-center bg-amber-100/60 px-3 py-1.5 rounded-full text-sm">
+                <i class="fa-solid fa-user text-amber-700 mr-1.5"></i>
+                <select id="userSelect" class="bg-transparent font-medium text-amber-900 outline-none">
+                    <option value="爸爸">爸爸</option>
+                    <option value="妈妈">妈妈</option>
+                    <option value="大宝">大宝</option>
+                    <option value="二宝">二宝</option>
+                    <option value="爷爷">爷爷</option>
+                    <option value="奶奶">奶奶</option>
+                </select>
+            </div>
         </div>
     </header>
 
@@ -80,6 +87,26 @@
                 </div>
                 <button onclick="submitOrder()" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-medium shadow-md transition">
                     确认下单给大厨
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查看今日已点订单弹窗 -->
+    <div id="historyModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 max-h-[80vh] flex flex-col shadow-2xl">
+            <div class="flex justify-between items-center pb-3 border-b">
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-clipboard-list mr-1"></i> 今日已点菜单与状态</h3>
+                <button onclick="toggleHistoryModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div id="historyOrdersList" class="overflow-y-auto py-4 space-y-3 flex-1">
+                <!-- 动态加载今日所有订单 -->
+            </div>
+
+            <div class="pt-3 border-t text-center">
+                <button onclick="toggleHistoryModal()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium transition">
+                    关闭
                 </button>
             </div>
         </div>
@@ -227,6 +254,54 @@
             modal.classList.toggle('hidden');
         }
 
+        // 打开/关闭“查看已点订单”弹窗
+        function toggleHistoryModal() {
+            const modal = document.getElementById('historyModal');
+            if (modal.classList.contains('hidden')) {
+                loadHistoryOrders();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // 渲染今日已点菜单列表
+        function loadHistoryOrders() {
+            const container = document.getElementById('historyOrdersList');
+            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS)) || [];
+
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-sm">今天还没有人点过菜哦，快去选几样吧~</div>`;
+                return;
+            }
+
+            container.innerHTML = orders.map(order => `
+                <div class="bg-gray-50 border border-gray-100 p-3.5 rounded-xl space-y-2 text-sm">
+                    <div class="flex justify-between items-center border-b border-gray-200 pb-1.5">
+                        <span class="font-bold text-amber-900"><i class="fa-solid fa-user-circle mr-1"></i> ${order.user}的点餐</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-[11px] text-gray-400">${order.time}</span>
+                            <span class="text-[11px] px-2 py-0.5 rounded-full font-medium ${order.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}">${order.status}</span>
+                        </div>
+                    </div>
+                    <div class="space-y-1">
+                        ${order.items.map(i => `
+                            <div class="flex justify-between text-xs text-gray-700">
+                                <div>
+                                    <span class="font-medium">${i.name}</span>
+                                    <span class="text-gray-400 ml-1">x${i.count}</span>${i.note ? `<span class="text-amber-600 ml-1 bg-amber-50 px-1 rounded">(${i.note})</span>` : ''}
+                                </div>
+                                <span class="font-semibold">¥${i.price * i.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="flex justify-between items-center pt-1.5 border-t border-gray-200 text-xs font-bold text-amber-900">
+                        <span>小计：¥${order.totalPrice}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function submitOrder() {
             if (cart.length === 0) {
                 alert('请先选择要点购的菜品哦！');
@@ -239,7 +314,7 @@
             const newOrder = {
                 id: Date.now(),
                 user: user,
-                items: JSON.parse(JSON.stringify(cart)), // 深拷贝购物车数据，确保备注等内容正确保存
+                items: JSON.parse(JSON.stringify(cart)),
                 totalPrice: cart.reduce((sum, i) => sum + i.price * i.count, 0),
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 status: '待制作'
@@ -250,7 +325,6 @@
 
             alert(`下单成功！大厨 ${user} 已经收到您的点餐啦~`);
             
-            // 清空购物车并关闭弹窗及悬浮栏
             cart = [];
             document.getElementById('cartModal').classList.add('hidden');
             updateCartBar();
