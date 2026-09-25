@@ -76,6 +76,27 @@
     </main>
 
     <script>
+        // 核心：使用与前台完全一致的统一共享键名
+        const STORAGE_KEY_DISHES = 'family_shared_dishes';
+        const STORAGE_KEY_ORDERS = 'family_shared_orders';
+
+        const defaultDishes = [
+            { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
+            { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
+            { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃' },
+            { id: 4, name: '番茄鸡蛋面', price: 22, category: '主食/汤品', image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=300', desc: '手工面条，汤鲜味美' },
+            { id: 5, name: '鲜榨冰镇西瓜汁', price: 15, category: '饮品/甜点', image: 'https://images.unsplash.com/photo-1589734553456-25f73d4c4f9a?w=300', desc: '100%纯西瓜鲜榨' }
+        ];
+
+        function getDishes() {
+            let dishes = JSON.parse(localStorage.getItem(STORAGE_KEY_DISHES));
+            if (!dishes) {
+                dishes = defaultDishes;
+                localStorage.setItem(STORAGE_KEY_DISHES, JSON.stringify(dishes));
+            }
+            return dishes;
+        }
+
         function switchTab(tab) {
             const oBtn = document.getElementById('tabOrdersBtn');
             const dBtn = document.getElementById('tabDishesBtn');
@@ -99,7 +120,7 @@
 
         // 订单管理逻辑
         function loadOrders() {
-            const orders = JSON.parse(localStorage.getItem('family_orders')) || [];
+            const orders = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS)) || [];
             const container = document.getElementById('orderList');
 
             if (orders.length === 0) {
@@ -139,28 +160,24 @@
         }
 
         function updateOrderStatus(idx, status) {
-            let orders = JSON.parse(localStorage.getItem('family_orders')) || [];
+            let orders = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS)) || [];
             orders[idx].status = status;
-            localStorage.setItem('family_orders', JSON.stringify(orders));
+            localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(orders));
             loadOrders();
         }
 
         function deleteOrder(idx) {
-            let orders = JSON.parse(localStorage.getItem('family_orders')) || [];
+            let orders = JSON.parse(localStorage.getItem(STORAGE_KEY_ORDERS)) || [];
             orders.splice(idx, 1);
-            localStorage.setItem('family_orders', JSON.stringify(orders));
+            localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(orders));
             loadOrders();
         }
 
         // 菜品管理逻辑
         function loadAdminDishes() {
-            let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [
-                { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
-                { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
-                { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃' }
-            ];
-
+            const dishes = getDishes();
             const list = document.getElementById('adminDishList');
+            
             list.innerHTML = dishes.map(d => `
                 <div class="flex justify-between items-center border-b pb-3 text-sm">
                     <div class="flex items-center space-x-3">
@@ -190,7 +207,7 @@
                 return;
             }
 
-            let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [];
+            let dishes = getDishes();
             dishes.push({
                 id: Date.now(),
                 name,
@@ -200,7 +217,7 @@
                 desc: desc || '美味家常菜'
             });
 
-            localStorage.setItem('family_dishes', JSON.stringify(dishes));
+            localStorage.setItem(STORAGE_KEY_DISHES, JSON.stringify(dishes));
             
             // 清空输入框
             document.getElementById('newName').value = '';
@@ -209,14 +226,14 @@
             document.getElementById('newDesc').value = '';
             
             loadAdminDishes();
-            alert('新菜品添加成功！家人点餐端将实时同步该菜品。');
+            alert('新菜品添加成功！前台点餐页面将立即同步。');
         }
 
         function deleteDish(id) {
             if (!confirm('确定要删除这道菜吗？')) return;
-            let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [];
+            let dishes = getDishes();
             dishes = dishes.filter(d => d.id !== id);
-            localStorage.setItem('family_dishes', JSON.stringify(dishes));
+            localStorage.setItem(STORAGE_KEY_DISHES, JSON.stringify(dishes));
             loadAdminDishes();
         }
 
