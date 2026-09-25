@@ -19,7 +19,7 @@
             <span class="text-xl">🛒</span>
             <div>
                 <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭采购管理后台</h1>
-                <p class="text-[10px] text-gray-400">实时统计与原材料汇总</p>
+                <p class="text-[10px] text-gray-400">智能库存抵扣与采购汇总</p>
             </div>
         </div>
         <div class="flex items-center space-x-1.5">
@@ -51,26 +51,41 @@
 
         <!-- 选项卡切换 -->
         <div class="flex bg-amber-100/60 p-1 rounded-xl text-xs font-bold">
-            <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 rounded-lg bg-white text-amber-900 shadow-xs transition">周末采购原材料清单</button>
-            <button onclick="switchTab('orders')" id="tab-orders" class="flex-1 py-2 rounded-lg text-gray-600 transition">全家点菜明细</button>
-            <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 rounded-lg text-gray-600 transition">菜品库与配料</button>
+            <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 rounded-lg bg-white text-amber-900 shadow-xs transition">周末采购清单</button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-2 rounded-lg text-gray-600 transition">库存管理</button>
+            <button onclick="switchTab('orders')" id="tab-orders" class="flex-1 py-2 rounded-lg text-gray-600 transition">点菜明细</button>
+            <button onclick="switchTab('dishes')" id="tab-dishes" class="flex-1 py-2 rounded-lg text-gray-600 transition">菜品库</button>
         </div>
 
-        <!-- 面板 1：周末采购原材料清单 -->
+        <!-- 面板 1：周末采购原材料清单（含库存抵扣） -->
         <div id="panel-summary" class="space-y-3">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
-                    <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>周末一站式采购原材料汇总</span>
-                    <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">自动合计重量</span>
+                    <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>扣除库存后的实际需购清单</span>
+                    <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">已自动联动库存</span>
                 </h3>
-                <p class="text-[11px] text-gray-400">根据全家人点单的菜品、配料及所选配菜，自动合并相同原材料的总数：</p>
+                <p class="text-[11px] text-gray-400">系统已自动用现有库存抵扣，仅显示库存不足需要购买的差额：</p>
                 <div id="summaryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
                 </div>
             </div>
         </div>
 
-        <!-- 面板 2：全家点菜明细 -->
+        <!-- 面板 2：库存管理 -->
+        <div id="panel-inventory" class="space-y-3 hidden">
+            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
+                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
+                    <span><i class="fa-solid fa-warehouse mr-1 text-amber-600"></i>现有原材料库存设置</span>
+                    <button onclick="openAddInventoryModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>手动添加库存</button>
+                </h3>
+                <p class="text-[11px] text-gray-400">在此维护家中现有的原材料数量，点菜后系统会自动扣减库存：</p>
+                <div id="inventoryListContainer" class="space-y-2 pt-1">
+                    <div class="text-center py-10 text-gray-400 text-xs">暂无库存记录...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 面板 3：全家点菜明细 -->
         <div id="panel-orders" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
@@ -83,7 +98,7 @@
             </div>
         </div>
 
-        <!-- 面板 3：菜品库管理 -->
+        <!-- 面板 4：菜品库管理 -->
         <div id="panel-dishes" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
@@ -107,7 +122,7 @@
             <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">保存退出</button>
         </div>
         <div class="bg-emerald-50 px-4 py-2 text-[11px] text-emerald-800 border-b flex justify-between items-center">
-            <span>买一样勾选一样，支持现场修改或删除！</span>
+            <span>买一样勾选一样，已扣除家里库存！</span>
             <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
         </div>
         <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full"></div>
@@ -115,6 +130,34 @@
             <button onclick="openAddManualShoppingItem()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">
                 <i class="fa-solid fa-plus mr-1"></i> 在超市临时加买一项
             </button>
+        </div>
+    </div>
+
+    <!-- 添加/修改库存弹窗 -->
+    <div id="inventoryModal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
+            <h3 class="font-bold text-sm text-amber-900" id="inventoryModalTitle">添加/修改库存</h3>
+            <input type="hidden" id="editInventoryKey">
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="text-gray-500 block mb-1">原材料名称</label>
+                    <input type="text" id="inventoryNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none" placeholder="例如：五花肉">
+                </div>
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">库存数量</label>
+                        <input type="number" id="inventoryTotalInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none" placeholder="500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">单位</label>
+                        <input type="text" id="inventoryUnitInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none" placeholder="g">
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-1">
+                <button onclick="closeInventoryModal()" class="flex-1 bg-gray-100 py-2 rounded-xl text-xs font-bold">取消</button>
+                <button onclick="saveInventoryItem()" class="flex-1 bg-amber-600 text-white py-2 rounded-xl text-xs font-bold">保存</button>
+            </div>
         </div>
     </div>
 
@@ -187,7 +230,6 @@
                 <div>
                     <label class="text-emerald-800 font-bold block mb-1">可选配菜 / 附加选项 (可选)</label>
                     <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:价格:原材料 (多项用逗号隔开)&#10;例如：加辣:0:小米椒 10g, 加肉条:5:瘦肉 100g"></textarea>
-                    <p class="text-[10px] text-gray-400 mt-1">注：如果配菜不增加菜品总价，价格填 0；如果包含额外原材料，点单时选中会自动计入采购汇总。</p>
                 </div>
             </div>
             <div class="flex space-x-2 pt-1">
@@ -200,7 +242,7 @@
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
 
-        let cloudData = { dishes: [], orders: [], checkedIngredients: [], manualIngredients: [], ingredientOverrides: {} };
+        let cloudData = { dishes: [], orders: [], checkedIngredients: [], manualIngredients: [], ingredientOverrides: {}, inventory: {} };
         let currentTab = 'summary';
 
         async function fetchAllData() {
@@ -213,6 +255,7 @@
                     cloudData.checkedIngredients = json.checkedIngredients || {};
                     cloudData.manualIngredients = json.manualIngredients || [];
                     cloudData.ingredientOverrides = json.ingredientOverrides || {};
+                    cloudData.inventory = json.inventory || {};
 
                     if (cloudData.dishes.length > 0) {
                         localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
@@ -256,7 +299,7 @@
 
         function switchTab(tab) {
             currentTab = tab;
-            ['summary', 'orders', 'dishes'].forEach(t => {
+            ['summary', 'inventory', 'orders', 'dishes'].forEach(t => {
                 let btn = document.getElementById(`tab-${t}`);
                 let panel = document.getElementById(`panel-${t}`);
                 if (t === tab) {
@@ -273,6 +316,7 @@
         function renderAll() {
             renderStats();
             if (currentTab === 'summary') renderSummaryIngredients();
+            if (currentTab === 'inventory') renderInventory();
             if (currentTab === 'orders') renderOrders();
             if (currentTab === 'dishes') renderDishesAdmin();
             if (!document.getElementById('supermarketModal').classList.contains('hidden')) {
@@ -291,64 +335,29 @@
         }
 
         function updateOrdersStatusAutomatically() {
-            let dishes = cloudData.dishes || [];
-            let dishMap = {};
-            dishes.forEach(d => { dishMap[d.id] = d; });
+            let list = getRawAggregatedIngredients();
+            let inventory = cloudData.inventory || {};
             let checked = cloudData.checkedIngredients || {};
             let statusChanged = false;
 
-            function parseAndCheckIngredients(ingredientsStr) {
-                if (!ingredientsStr) return true;
-                let rawParts = ingredientsStr.split(/[,，;；]/);
-                let allChecked = true;
-                rawParts.forEach(part => {
-                    part = part.trim();
-                    if (!part) return;
-                    let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
-                    let key = match ? `auto_${match[1].trim()}_${match[3] ? match[3].trim() : ''}` : `auto_other_${part}`;
-                    if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key] && cloudData.ingredientOverrides[key].deleted) {
-                        return;
-                    }
-                    if (!checked[key]) {
-                        allChecked = false;
-                    }
-                });
-                return rawParts.length === 0 ? true : allChecked;
-            }
+            // 检查每样需求扣除库存后是否还需要购买
+            let netNeededList = [];
+            list.forEach(item => {
+                let invItem = inventory[item.key];
+                let invStock = invItem ? invItem.total : 0;
+                let needed = item.total - invStock;
+                if (item.isText || needed > 0) {
+                    netNeededList.push(item.key);
+                }
+            });
+
+            let allChecked = netNeededList.length > 0 && netNeededList.every(key => checked[key]);
 
             (cloudData.orders || []).forEach(order => {
                 if (!order.items || order.items.length === 0) return;
                 if (order.status === '已完成') return;
 
-                let allDishesPurchased = true;
-
-                order.items.forEach(orderItem => {
-                    let dish = dishMap[orderItem.id];
-                    if (!dish) {
-                        allDishesPurchased = false;
-                        return;
-                    }
-
-                    let mainChecked = parseAndCheckIngredients(dish.ingredients);
-                    if (!mainChecked) {
-                        allDishesPurchased = false;
-                        return;
-                    }
-
-                    if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
-                        orderItem.selectedOptions.forEach(optName => {
-                            let foundOpt = dish.options.find(o => o.name === optName);
-                            if (foundOpt && foundOpt.ingredients) {
-                                let optChecked = parseAndCheckIngredients(foundOpt.ingredients);
-                                if (!optChecked) {
-                                    allDishesPurchased = false;
-                                }
-                            }
-                        });
-                    }
-                });
-
-                let targetStatus = allDishesPurchased ? '已采购' : '待采购';
+                let targetStatus = (netNeededList.length === 0 || allChecked) ? '已采购' : '待采购';
                 if (!order.status) order.status = '待采购';
 
                 if (order.status !== '已完成' && order.status !== targetStatus) {
@@ -374,8 +383,7 @@
             }
         }
 
-        // 修复后：聚合时同时包含了主料与选中配菜的原材料
-        function getAggregatedIngredients() {
+        function getRawAggregatedIngredients() {
             let orders = cloudData.orders || [];
             let dishes = cloudData.dishes || [];
             let dishMap = {};
@@ -385,7 +393,7 @@
 
             function addIngredientsToSummary(ingredientsStr, times) {
                 if (!ingredientsStr) return;
-                let rawParts = ingredientsStr.split(/[,，;；]/);
+                let rawParts = ingredientsStr.split(/[,[,;；]/);
                 rawParts.forEach(part => {
                     part = part.trim();
                     if (!part) return;
@@ -416,11 +424,7 @@
                     let dish = dishMap[orderItem.id];
                     if (dish) {
                         let times = orderItem.count;
-                        // 1. 累加主料
-                        if (dish.ingredients) {
-                            addIngredientsToSummary(dish.ingredients, times);
-                        }
-                        // 2. 累加所选配菜的原材料
+                        if (dish.ingredients) addIngredientsToSummary(dish.ingredients, times);
                         if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
                             orderItem.selectedOptions.forEach(optName => {
                                 let foundOpt = dish.options.find(o => o.name === optName);
@@ -439,21 +443,40 @@
                 if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key]) {
                     let override = cloudData.ingredientOverrides[key];
                     if (override.deleted) continue;
-                    list.push({
-                        key: key,
-                        name: override.name,
-                        unit: override.unit,
-                        total: override.total,
-                        isAuto: true
-                    });
+                    list.push({ key: key, name: override.name, unit: override.unit, total: override.total });
                 } else {
                     list.push(item);
                 }
             }
+            return list;
+        }
+
+        // 核心：计算扣除库存后的采购清单
+        function getAggregatedIngredients() {
+            let rawList = getRawAggregatedIngredients();
+            let inventory = cloudData.inventory || {};
+            let resultList = [];
+
+            rawList.forEach(item => {
+                let invItem = inventory[item.key];
+                let stock = invItem ? invItem.total : 0;
+                let needed = item.isText ? item.total : (item.total - stock);
+
+                if (item.isText || needed > 0) {
+                    resultList.push({
+                        key: item.key,
+                        name: item.name,
+                        unit: item.unit,
+                        total: needed,
+                        stockUsed: stock,
+                        originalTotal: item.total
+                    });
+                }
+            });
 
             if (cloudData.manualIngredients) {
                 cloudData.manualIngredients.forEach(m => {
-                    list.push({
+                    resultList.push({
                         key: m.key,
                         name: m.name,
                         unit: m.unit,
@@ -463,7 +486,7 @@
                 });
             }
 
-            return list;
+            return resultList;
         }
 
         function renderSummaryIngredients() {
@@ -471,19 +494,108 @@
             let list = getAggregatedIngredients();
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">还没有家人点菜，或者点选的菜品未配置“原材料”~</div>`;
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">所需原材料全部由家里库存抵扣完毕，无需购买！🎉</div>`;
                 return;
             }
 
             container.innerHTML = list.map(item => {
                 let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
+                let stockInfo = item.stockUsed ? `<span class="text-[10px] text-emerald-600 block">已用库存抵扣 ${item.stockUsed}${item.unit}</span>` : '';
                 return `
                     <div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
-                        <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
-                        <span class="bg-amber-600 text-white font-bold px-2.5 py-0.5 rounded text-xs">${displayTotal}${item.unit || '份'}</span>
+                        <div>
+                            <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
+                            ${stockInfo}
+                        </div>
+                        <span class="bg-amber-600 text-white font-bold px-2.5 py-0.5 rounded text-xs">需买: ${displayTotal}${item.unit || '份'}</span>
                     </div>
                 `;
             }).join('');
+        }
+
+        function renderInventory() {
+            const container = document.getElementById('inventoryListContainer');
+            let inventory = cloudData.inventory || {};
+            let keys = Object.keys(inventory);
+
+            if (keys.length === 0) {
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">暂无库存数据，请点击右上角添加家里现有的材料~</div>`;
+                return;
+            }
+
+            container.innerHTML = keys.map(key => {
+                let item = inventory[key];
+                return `
+                    <div class="bg-white border rounded-xl p-3 flex items-center justify-between shadow-xs">
+                        <div>
+                            <h4 class="font-bold text-xs text-gray-800">${item.name}</h4>
+                            <p class="text-[10px] text-emerald-700 font-semibold">现有库存: ${item.total}${item.unit || '份'}</p>
+                        </div>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="openEditInventoryModal('${key}')" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1 rounded-lg text-xs font-bold">修改</button>
+                            <button onclick="deleteInventoryItem('${key}')" class="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openAddInventoryModal() {
+            document.getElementById('inventoryModalTitle').innerText = '添加库存材料';
+            document.getElementById('editInventoryKey').value = '';
+            document.getElementById('inventoryNameInput').value = '';
+            document.getElementById('inventoryTotalInput').value = '';
+            document.getElementById('inventoryUnitInput').value = 'g';
+            document.getElementById('inventoryModal').classList.remove('hidden');
+        }
+
+        function openEditInventoryModal(key) {
+            let item = (cloudData.inventory || {})[key];
+            if (!item) return;
+            document.getElementById('inventoryModalTitle').innerText = '修改库存材料';
+            document.getElementById('editInventoryKey').value = key;
+            document.getElementById('inventoryNameInput').value = item.name;
+            document.getElementById('inventoryTotalInput').value = item.total;
+            document.getElementById('inventoryUnitInput').value = item.unit || '';
+            document.getElementById('inventoryModal').classList.remove('hidden');
+        }
+
+        function closeInventoryModal() {
+            document.getElementById('inventoryModal').classList.add('hidden');
+        }
+
+        async function saveInventoryItem() {
+            let key = document.getElementById('editInventoryKey').value;
+            let name = document.getElementById('inventoryNameInput').value.trim();
+            let total = parseFloat(document.getElementById('inventoryTotalInput').value);
+            let unit = document.getElementById('inventoryUnitInput').value.trim();
+
+            if (!name || isNaN(total)) {
+                alert('请填写完整的材料名称和有效数量！');
+                return;
+            }
+
+            await fetchAllData();
+            if (!cloudData.inventory) cloudData.inventory = {};
+
+            let targetKey = key ? key : `auto_${name}_${unit}`;
+            cloudData.inventory[targetKey] = { name: name, total: total, unit: unit };
+
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            closeInventoryModal();
+            renderAll();
+        }
+
+        async function deleteInventoryItem(key) {
+            if (!confirm('确定要删除该库存项吗？')) return;
+            await fetchAllData();
+            if (cloudData.inventory && cloudData.inventory[key]) {
+                delete cloudData.inventory[key];
+            }
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            renderAll();
         }
 
         function renderOrders() {
@@ -724,7 +836,7 @@
             let list = getAggregatedIngredients();
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-xs">当前没有采购原材料任务~</div>`;
+                container.innerHTML = `<div class="text-center py-16 text-gray-400 text-xs">库存充足，当前无需购买任何原材料！🎉</div>`;
                 document.getElementById('supermarketProgress').innerText = `已买: 0 / 0`;
                 return;
             }
@@ -737,6 +849,7 @@
             container.innerHTML = list.map(item => {
                 let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
                 let isChecked = !!cloudData.checkedIngredients[item.key];
+                let stockInfo = item.stockUsed ? `<span class="text-[10px] text-emerald-600 block">已用库存抵扣 ${item.stockUsed}${item.unit}</span>` : '';
                 return `
                     <div class="bg-white p-3 rounded-2xl border ${isChecked ? 'border-emerald-300 bg-emerald-50/40 opacity-70 line-through' : 'border-gray-200 shadow-xs'} flex items-center justify-between transition">
                         <div class="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer" onclick="toggleSupermarketItem('${item.key}')">
@@ -745,7 +858,8 @@
                             </div>
                             <div class="min-w-0">
                                 <h4 class="font-bold text-sm text-gray-800 truncate">${item.name}</h4>
-                                <p class="text-xs text-amber-700 font-semibold">需采购: ${displayTotal}${item.unit || '份'}</p>
+                                <p class="text-xs text-amber-700 font-semibold">需采购差额: ${displayTotal}${item.unit || '份'}</p>
+                                ${stockInfo}
                             </div>
                         </div>
                         <div class="flex items-center space-x-1 shrink-0 ml-2">
