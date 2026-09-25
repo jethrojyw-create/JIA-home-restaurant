@@ -15,7 +15,7 @@
             <span class="text-2xl">👨‍🍳</span>
             <h1 class="font-bold text-lg">大厨后台 & 菜单管理</h1>
         </div>
-        <a href="index.html" class="bg-amber-700 hover:bg-amber-600 text-xs px-3 py-1.5 rounded-lg transition">去点餐端 &rarr;</a>
+        <a href="index.html" target="_blank" class="bg-amber-700 hover:bg-amber-600 text-xs px-3 py-1.5 rounded-lg transition">去点餐端 &rarr;</a>
     </header>
 
     <main class="max-w-2xl mx-auto p-4 space-y-6">
@@ -39,20 +39,35 @@
 
         <!-- 菜品管理视图 (默认隐藏) -->
         <section id="dishesSection" class="space-y-4 hidden">
+            <!-- 添加新菜品表单 -->
             <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100">
                 <h3 class="font-bold text-base text-amber-900 mb-3">添加新菜品</h3>
                 <div class="space-y-3">
                     <input type="text" id="newName" placeholder="菜品名称（如：糖醋排骨）" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
-                    <input type="number" id="newPrice" placeholder="价格（元）" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
-                    <input type="text" id="newImage" placeholder="图片网址 (URL)" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
-                    <input type="text" id="newDesc" placeholder="口味描述（如：酸甜可口）" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
-                    <button onclick="addNewDish()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2 rounded-lg shadow-sm transition">确认添加菜品</button>
+                    
+                    <!-- 分类选择下拉框 -->
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">选择菜品分类：</label>
+                        <select id="newCategory" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600 bg-white">
+                            <option value="热菜">热菜 🍳</option>
+                            <option value="凉菜">凉菜 🥗</option>
+                            <option value="主食/汤品">主食/汤品 🍜</option>
+                            <option value="饮品/甜点">饮品/甜点 🧋</option>
+                        </select>
+                    </div>
+
+                    <input type="number" id="newPrice" placeholder="价格（元，如：58）" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
+                    <input type="text" id="newImage" placeholder="图片网址 (URL，可留空使用默认图)" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
+                    <input type="text" id="newDesc" placeholder="口味描述（如：酸甜可口，老少皆宜）" class="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:border-amber-600">
+                    
+                    <button onclick="addNewDish()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-medium py-2.5 rounded-lg shadow-sm transition">确认添加菜品</button>
                 </div>
             </div>
 
+            <!-- 现有菜单列表 -->
             <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100">
                 <h3 class="font-bold text-base text-amber-900 mb-3">现有菜单列表</h3>
-                <div id="adminDishList" class="space-y-2">
+                <div id="adminDishList" class="space-y-3">
                     <!-- 动态加载菜品管理列表 -->
                 </div>
             </div>
@@ -95,20 +110,28 @@
             container.innerHTML = orders.map((order, idx) => `
                 <div class="bg-white p-4 rounded-xl shadow-xs border border-gray-100 space-y-3">
                     <div class="flex justify-between items-center border-b pb-2">
-                        <span class="font-bold text-amber-900"><i class="fa-solid fa-user-circle mr-1"></i> ${order.user}</span>
+                        <span class="font-bold text-amber-900"><i class="fa-solid fa-user-circle mr-1"></i> ${order.user}的点餐</span>
                         <div class="flex items-center space-x-2">
                             <span class="text-xs text-gray-400">${order.time}</span>
-                            <span class="text-xs px-2 py-0.5 rounded ${order.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}">${order.status}</span>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full font-medium ${order.status === '已完成' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}">${order.status}</span>
                         </div>
                     </div>
-                    <div class="space-y-1">
-                        ${order.items.map(i => `<div class="flex justify-between text-sm text-gray-600"><span>${i.name} x${i.count}</span><span>¥${i.price * i.count}</span></div>`).join('')}
+                    <div class="space-y-2">
+                        ${order.items.map(i => `
+                            <div class="flex justify-between text-sm text-gray-700">
+                                <div>
+                                    <span class="font-medium">${i.name}</span>
+                                    <span class="text-xs text-gray-400 ml-1">x${i.count}</span>${i.note ? `<p class="text-xs text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded mt-0.5">备注: ${i.note}</p>` : ''}
+                                </div>
+                                <span class="font-semibold">¥${i.price * i.count}</span>
+                            </div>
+                        `).join('')}
                     </div>
                     <div class="flex justify-between items-center pt-2 border-t text-sm">
-                        <span class="font-bold">合计：¥${order.totalPrice}</span>
+                        <span class="font-bold text-amber-900">合计：¥${order.totalPrice}</span>
                         <div class="space-x-2">
-                            <button onclick="updateOrderStatus(${idx}, '已完成')" class="bg-green-600 text-white px-3 py-1 rounded text-xs">完成出餐</button>
-                            <button onclick="deleteOrder(${idx})" class="text-red-500 text-xs px-2 py-1">删除</button>
+                            <button onclick="updateOrderStatus(${idx}, '已完成')" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs transition">完成出餐</button>
+                            <button onclick="deleteOrder(${idx})" class="text-red-500 hover:text-red-700 text-xs px-2 py-1">删除</button>
                         </div>
                     </div>
                 </div>
@@ -134,32 +157,36 @@
             let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [
                 { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
                 { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
-                { id: 3, name: '番茄炒鸡蛋', price: 22, category: '热菜', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300', desc: '经典家常，酸甜开胃' }
+                { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃' }
             ];
 
             const list = document.getElementById('adminDishList');
             list.innerHTML = dishes.map(d => `
-                <div class="flex justify-between items-center border-b pb-2 text-sm">
+                <div class="flex justify-between items-center border-b pb-3 text-sm">
                     <div class="flex items-center space-x-3">
-                        <img src="${d.image}" class="w-10 h-10 object-cover rounded-md">
+                        <img src="${d.image}" class="w-12 h-12 object-cover rounded-lg">
                         <div>
-                            <p class="font-bold">${d.name}</p>
-                            <span class="text-xs text-amber-600">¥${d.price}</span>
+                            <div class="flex items-center space-x-2">
+                                <p class="font-bold text-gray-800">${d.name}</p>
+                                <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded font-medium">${d.category || '热菜'}</span>
+                            </div>
+                            <span class="text-xs text-amber-600 font-semibold">¥${d.price}</span>
                         </div>
                     </div>
-                    <button onclick="deleteDish(${d.id})" class="text-red-500 hover:text-red-700 text-xs"><i class="fa-solid fa-trash"></i> 删除</button>
+                    <button onclick="deleteDish(${d.id})" class="text-red-500 hover:text-red-700 text-xs bg-red-50 px-2.5 py-1 rounded-md transition"><i class="fa-solid fa-trash"></i> 删除</button>
                 </div>
             `).join('');
         }
 
         function addNewDish() {
             const name = document.getElementById('newName').value;
+            const category = document.getElementById('newCategory').value;
             const price = parseFloat(document.getElementById('newPrice').value);
             const image = document.getElementById('newImage').value;
             const desc = document.getElementById('newDesc').value;
 
-            if (!name || !price) {
-                alert('请填写菜品名称和价格！');
+            if (!name || isNaN(price)) {
+                alert('请完整填写菜品名称和正确价格！');
                 return;
             }
 
@@ -167,27 +194,33 @@
             dishes.push({
                 id: Date.now(),
                 name,
+                category,
                 price,
                 image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300',
-                desc
+                desc: desc || '美味家常菜'
             });
 
             localStorage.setItem('family_dishes', JSON.stringify(dishes));
+            
+            // 清空输入框
             document.getElementById('newName').value = '';
             document.getElementById('newPrice').value = '';
             document.getElementById('newImage').value = '';
             document.getElementById('newDesc').value = '';
+            
             loadAdminDishes();
-            alert('添加成功！');
+            alert('新菜品添加成功！家人点餐端将实时同步该菜品。');
         }
 
         function deleteDish(id) {
+            if (!confirm('确定要删除这道菜吗？')) return;
             let dishes = JSON.parse(localStorage.getItem('family_dishes')) || [];
             dishes = dishes.filter(d => d.id !== id);
             localStorage.setItem('family_dishes', JSON.stringify(dishes));
             loadAdminDishes();
         }
 
+        // 初始化加载订单
         loadOrders();
     </script>
 </body>
