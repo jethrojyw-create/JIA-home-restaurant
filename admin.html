@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>家庭全周大采购管理端 (后台)</title>
+    <title>家庭采购管理后台 (带智能联动)</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -19,7 +19,7 @@
             <span class="text-xl">🛒</span>
             <div>
                 <h1 class="font-bold text-sm text-amber-900 leading-tight">家庭采购管理后台</h1>
-                <p class="text-[10px] text-gray-400">实时统计与原材料汇总</p>
+                <p class="text-[10px] text-gray-400">采购状态与菜品原材料双向联动</p>
             </div>
         </div>
         <div class="flex items-center space-x-1.5">
@@ -69,12 +69,12 @@
             </div>
         </div>
 
-        <!-- 面板 2：全家点菜明细（支持在后台直接切换订单状态：待采购 ➔ 已采购 ➔ 已完成） -->
+        <!-- 面板 2：全家点菜明细 -->
         <div id="panel-orders" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
                     <span><i class="fa-solid fa-receipt mr-1 text-amber-600"></i>家庭成员预定记录（按天归类）</span>
-                    <span class="text-[10px] text-gray-400">点击状态标签可切换流转</span>
+                    <span class="text-[10px] text-gray-400">原料买齐会自动变已采购</span>
                 </h3>
                 <div id="ordersListContainer" class="space-y-3 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">暂无点菜订单...</div>
@@ -106,7 +106,7 @@
             <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">保存退出</button>
         </div>
         <div class="bg-emerald-50 px-4 py-2 text-[11px] text-emerald-800 border-b flex justify-between items-center">
-            <span>买一样勾选一样！</span>
+            <span>买一样勾选一样，全买完关联菜品自动变为已采购！</span>
             <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
         </div>
         <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full"></div>
@@ -124,10 +124,7 @@
             <input type="hidden" id="editManualKey">
             <input type="hidden" id="editItemType">
             <div class="space-y-2.5 text-xs">
-                <div>
-                    <label class="text-gray-500 block mb-1">原材料名称</label>
-                    <input type="text" id="manualNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
-                </div>
+                <div><label class="text-gray-500 block mb-1">原材料名称</label><input type="text" id="manualNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none"></div>
                 <div class="flex space-x-2">
                     <div class="flex-1"><label class="text-gray-500 block mb-1">数量</label><input type="number" id="manualTotalInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none"></div>
                     <div class="flex-1"><label class="text-gray-500 block mb-1">单位</label><input type="text" id="manualUnitInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none"></div>
@@ -185,6 +182,10 @@
                 let localBackup = localStorage.getItem('family_dishes_only_backup');
                 if (localBackup) { cloudData.dishes = JSON.parse(localBackup); await saveAllData(); }
             }
+
+            // 🌟 每次拉取或更新时，自动根据采购勾选状态联动更新订单状态
+            updateOrdersStatusAutomatically();
+
             renderAll();
         }
 
@@ -223,7 +224,72 @@
             document.getElementById('totalOrdersCount').innerText = (cloudData.orders || []).length;
         }
 
-        // 🌟 核心：后台点击订单状态标签可循环切换：待采购 ➔ 已采购 ➔ 已完成
+        // 🌟 核心联动算法：检查每一个订单中的每个菜品，若其对应原材料在 checkedIngredients 中全部已勾选，则订单状态自动变更为“已采购”
+        function updateOrdersStatusAutomatically() {
+            let dishes = cloudData.dishes || [];
+            let dishMap = {};
+            dishes.forEach(d => { dishMap[d.id] = d; });
+            let checked = cloudData.checkedIngredients || {};
+
+            let statusChanged = false;
+
+            (cloudData.orders || []).forEach(order => {
+                if (!order.items || order.items.length === 0) return;
+                // 如果当前状态是“已完成”，则保持已完成，不覆盖人工流转
+                if (order.status === '已完成') return;
+
+                let allDishesPurchased = true;
+
+                order.items.forEach(orderItem => {
+                    let dish = dishMap[orderItem.id];
+                    if (!dish || !dish.ingredients) {
+                        allDishesPurchased = false;
+                        return;
+                    }
+
+                    // 解析该菜品的所有原材料 Key
+                    let rawParts = dish.ingredients.split(/[,，;；]/);
+                    let dishAllChecked = true;
+
+                    rawParts.forEach(part => {
+                        part = part.trim();
+                        if (!part) return;
+                        let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                        let key = match ? `auto_${match[1].trim()}_${match[3] ? match[3].trim() : ''}` : `auto_other_${part}`;
+
+                        // 如果某个覆盖项被删除了，忽略
+                        if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key] && cloudData.ingredientOverrides[key].deleted) {
+                            return;
+                        }
+
+                        // 关键判断：如果该原材料没有被勾选，则代表该菜品没买齐
+                        if (!checked[key]) {
+                            dishAllChecked = false;
+                        }
+                    });
+
+                    if (!dishAllChecked || rawParts.length === 0) {
+                        allDishesPurchased = false;
+                    }
+                });
+
+                // 联动赋值
+                let targetStatus = allDishesPurchased ? '已采购' : '待采购';
+                if (!order.status) order.status = '待采购';
+                
+                // 如果原来是“待采购”且现在全部买齐了，更新为“已采购”；反之如果取消勾选了，恢复为“待采购”
+                if (order.status !== '已完成' && order.status !== targetStatus) {
+                    order.status = targetStatus;
+                    statusChanged = true;
+                }
+            });
+
+            // 如果有状态变化，自动触发保存
+            if (statusChanged) {
+                saveAllData();
+            }
+        }
+
         async function cycleOrderStatus(orderId) {
             await fetchAllData();
             let order = (cloudData.orders || []).find(o => o.id === orderId);
@@ -451,6 +517,10 @@
         async function toggleSupermarketItem(key) {
             if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
             cloudData.checkedIngredients[key] = !cloudData.checkedIngredients[key];
+            
+            // 🌟 核心：在超市勾选或取消勾选时，立刻联动计算订单状态
+            updateOrdersStatusAutomatically();
+
             renderSupermarketList();
             await saveAllData();
         }
@@ -492,6 +562,7 @@
                 if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
                 cloudData.ingredientOverrides[key] = { name, unit, total, deleted: false };
             }
+            updateOrdersStatusAutomatically();
             await saveAllData();
             closeManualModal();
             renderSupermarketList();
@@ -509,6 +580,7 @@
                 cloudData.ingredientOverrides[key].deleted = true;
             }
             if (cloudData.checkedIngredients) delete cloudData.checkedIngredients[key];
+            updateOrdersStatusAutomatically();
             await saveAllData();
             renderSupermarketList();
             renderSummaryIngredients();
