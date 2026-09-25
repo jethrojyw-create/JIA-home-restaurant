@@ -63,7 +63,7 @@
                     <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>周末一站式采购原材料汇总</span>
                     <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">自动合计重量</span>
                 </h3>
-                <p class="text-[11px] text-gray-400">根据全家人点单的菜品及配料，自动合并相同原材料的总数：</p>
+                <p class="text-[11px] text-gray-400">根据全家人点单的菜品、配料及所选配菜，自动合并相同原材料的总数：</p>
                 <div id="summaryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
                 </div>
@@ -184,6 +184,11 @@
                     <label class="text-amber-800 font-bold block mb-1">所需原材料</label>
                     <textarea id="dishIngredientsInput" rows="2" class="w-full bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="例如：五花肉 500g, 冰糖 30g"></textarea>
                 </div>
+                <div>
+                    <label class="text-emerald-800 font-bold block mb-1">可选配菜 / 附加选项 (可选)</label>
+                    <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:价格:原材料 (多项用逗号隔开)&#10;例如：加辣:0:小米椒 10g, 加肉条:5:瘦肉 100g"></textarea>
+                    <p class="text-[10px] text-gray-400 mt-1">注：如果配菜不增加菜品总价，价格填 0；如果包含额外原材料，点单时选中会自动计入采购汇总。</p>
+                </div>
             </div>
             <div class="flex space-x-2 pt-1">
                 <button onclick="closeDishModal()" class="flex-1 bg-gray-100 py-2 rounded-xl text-xs font-bold">取消</button>
@@ -225,7 +230,6 @@
                 }
             }
 
-            // 自动联动并渲染
             updateOrdersStatusAutomatically();
             renderAll();
         }
@@ -286,7 +290,6 @@
             document.getElementById('totalOrdersCount').innerText = (cloudData.orders || []).length;
         }
 
-        // 🌟 自动联动更新订单状态
         function updateOrdersStatusAutomatically() {
             let dishes = cloudData.dishes || [];
             let dishMap = {};
@@ -294,39 +297,57 @@
             let checked = cloudData.checkedIngredients || {};
             let statusChanged = false;
 
+            // 辅助函数：解析原材料文本
+            function parseAndCheckIngredients(ingredientsStr, multiplier) {
+                if (!ingredientsStr) return true;
+                let rawParts = ingredientsStr.split(/[,，;；]/);
+                let allChecked = true;
+                rawParts.forEach(part => {
+                    part = part.trim();
+                    if (!part) return;
+                    let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                    let key = match ? `auto_${match[1].trim()}_${match[3] ? match[3].trim() : ''}` : `auto_other_${part}`;
+                    if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key] && cloudData.ingredientOverrides[key].deleted) {
+                        return;
+                    }
+                    if (!checked[key]) {
+                        allChecked = false;
+                    }
+                });
+                return rawParts.length === 0 ? true : allChecked;
+            }
+
             (cloudData.orders || []).forEach(order => {
                 if (!order.items || order.items.length === 0) return;
-                if (order.status === '已完成') return; // 已完成保持不变
+                if (order.status === '已完成') return;
 
                 let allDishesPurchased = true;
 
                 order.items.forEach(orderItem => {
                     let dish = dishMap[orderItem.id];
-                    if (!dish || !dish.ingredients) {
+                    if (!dish) {
                         allDishesPurchased = false;
                         return;
                     }
 
-                    let rawParts = dish.ingredients.split(/[,，;；]/);
-                    let dishAllChecked = true;
-
-                    rawParts.forEach(part => {
-                        part = part.trim();
-                        if (!part) return;
-                        let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
-                        let key = match ? `auto_${match[1].trim()}_${match[3] ? match[3].trim() : ''}` : `auto_other_${part}`;
-
-                        if (cloudData.ingredientOverrides && cloudData.ingredientOverrides[key] && cloudData.ingredientOverrides[key].deleted) {
-                            return;
-                        }
-
-                        if (!checked[key]) {
-                            dishAllChecked = false;
-                        }
-                    });
-
-                    if (!dishAllChecked || rawParts.length === 0) {
+                    // 检查主料
+                    let mainChecked = parseAndCheckIngredients(dish.ingredients, orderItem.count);
+                    if (!mainChecked) {
                         allDishesPurchased = false;
+                        return;
+                    }
+
+                    // 检查勾选的配菜
+                    if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
+                        orderItem.selectedOptions.forEach(optName => {
+                            let foundOpt = dish.options.find(o => o.name === optName);
+                            if (foundOpt && foundOpt.ingredients) {
+                                let optChecked = parseAndCheckIngredients(foundOpt.ingredients, orderItem.count);
+                                if (!optChecked) {
+                                    allDishesPurchased = false;
+                                }
+                            }
+                        });
                     }
                 });
 
@@ -356,7 +377,7 @@
             }
         }
 
-        // 🌟 核心：稳定恢复的原材料聚合计算函数
+        // 原材料聚合计算（包含主料与选中的配菜原材料）
         function getAggregatedIngredients() {
             let orders = cloudData.orders || [];
             let dishes = cloudData.dishes || [];
@@ -365,36 +386,52 @@
 
             let ingredientSummary = {};
 
+            function addIngredientsToSummary(ingredientsStr, times) {
+                if (!ingredientsStr) return;
+                let rawParts = ingredientsStr.split(/[,，;；]/);
+                rawParts.forEach(part => {
+                    part = part.trim();
+                    if (!part) return;
+                    let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                    if (match) {
+                        let ingName = match[1].trim();
+                        let val = parseFloat(match[2]);
+                        let unit = match[3] ? match[3].trim() : '';
+                        let key = `auto_${ingName}_${unit}`;
+
+                        if (!ingredientSummary[key]) {
+                            ingredientSummary[key] = { key: key, name: ingName, unit: unit, total: 0 };
+                        }
+                        ingredientSummary[key].total += val * times;
+                    } else {
+                        let key = `auto_other_${part}`;
+                        if (!ingredientSummary[key]) {
+                            ingredientSummary[key] = { key: key, name: part, unit: '', total: 0, isText: true };
+                        }
+                        ingredientSummary[key].total += times;
+                    }
+                });
+            }
+
             orders.forEach(order => {
                 if (!order.items) return;
                 order.items.forEach(orderItem => {
                     let dish = dishMap[orderItem.id];
-                    if (dish && dish.ingredients) {
+                    if (dish) {
                         let times = orderItem.count;
-                        let rawParts = dish.ingredients.split(/[,，;；]/);
-                        rawParts.forEach(part => {
-                            part = part.trim();
-                            if (!part) return;
-                            
-                            let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
-                            if (match) {
-                                let ingName = match[1].trim();
-                                let val = parseFloat(match[2]);
-                                let unit = match[3] ? match[3].trim() : '';
-                                let key = `auto_${ingName}_${unit}`;
-
-                                if (!ingredientSummary[key]) {
-                                    ingredientSummary[key] = { key: key, name: ingName, unit: unit, total: 0 };
+                        // 1. 累加主料
+                        if (dish.ingredients) {
+                            addIngredientsToSummary(dish.ingredients, times);
+                        }
+                        // 2. 累加所选配菜的原材料
+                        if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
+                            orderItem.selectedOptions.forEach(optName => {
+                                let foundOpt = dish.options.find(o => o.name === optName);
+                                if (foundOpt && foundOpt.ingredients) {
+                                    addIngredientsToSummary(foundOpt.ingredients, times);
                                 }
-                                ingredientSummary[key].total += val * times;
-                            } else {
-                                let key = `auto_other_${part}`;
-                                if (!ingredientSummary[key]) {
-                                    ingredientSummary[key] = { key: key, name: part, unit: '', total: 0, isText: true };
-                                }
-                                ingredientSummary[key].total += times;
-                            }
-                        });
+                            });
+                        }
                     }
                 });
             });
@@ -498,11 +535,13 @@
                                         <button onclick="deleteAdminOrder(${order.id})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
-                                <div class="space-y-0.5 text-xs text-gray-700">
+                                <div class="space-y-1 text-xs text-gray-700">
                                     ${(order.items || []).map(i => `
-                                        <div class="flex justify-between">
-                                            <span>${i.name} x${i.count}</span>
-                                            <span class="font-bold">¥${i.price * i.count}</span>
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <span class="font-bold">${i.name} x${i.count}</span>${i.selectedOptions && i.selectedOptions.length > 0 ? `<div class="text-[10px] text-emerald-700">配菜: ${i.selectedOptions.join(', ')}</div>` : ''}
+                                            </div>
+                                            <span class="font-bold">¥${i.itemTotalPrice || (i.price * i.count)}</span>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -538,25 +577,29 @@
                 return;
             }
 
-            container.innerHTML = dishes.map(dish => `
-                <div class="bg-white rounded-xl border p-2.5 flex items-center justify-between shadow-xs">
-                    <div class="flex items-center space-x-3 flex-1 min-w-0">
-                        <img src="${dish.image}" class="w-12 h-12 object-cover rounded-lg shrink-0">
-                        <div class="space-y-0.5 flex-1 min-w-0">
-                            <div class="flex items-center space-x-1.5">
-                                <h4 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h4>
-                                <span class="text-[9px] bg-amber-50 text-amber-700 px-1 py-0.2 rounded">${dish.category || '热菜'}</span>
+            container.innerHTML = dishes.map(dish => {
+                let optionsDesc = dish.options && dish.options.length > 0 ? dish.options.map(o => `${o.name}(+¥${o.price})`).join(', ') : '无';
+                return `
+                    <div class="bg-white rounded-xl border p-2.5 flex items-center justify-between shadow-xs">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                            <img src="${dish.image}" class="w-12 h-12 object-cover rounded-lg shrink-0">
+                            <div class="space-y-0.5 flex-1 min-w-0">
+                                <div class="flex items-center space-x-1.5">
+                                    <h4 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h4>
+                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1 py-0.2 rounded">${dish.category || '热菜'}</span>
+                                </div>
+                                <p class="text-[10px] text-amber-600 font-bold">¥${dish.price}</p>
+                                <p class="text-[10px] text-gray-400 truncate">配料: ${dish.ingredients || '未填写'}</p>
+                                <p class="text-[10px] text-emerald-600 truncate">配菜选项: ${optionsDesc}</p>
                             </div>
-                            <p class="text-[10px] text-amber-600 font-bold">¥${dish.price}</p>
-                            <p class="text-[10px] text-gray-400 truncate">配料: ${dish.ingredients || '未填写'}</p>
+                        </div>
+                        <div class="flex items-center space-x-1 shrink-0 ml-2">
+                            <button onclick="openEditDishModal(${dish.id})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-lg text-xs"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteDish(${dish.id})" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </div>
-                    <div class="flex items-center space-x-1 shrink-0 ml-2">
-                        <button onclick="openEditDishModal(${dish.id})" class="bg-gray-100 hover:bg-gray-200 text-gray-700 p-1.5 rounded-lg text-xs"><i class="fa-solid fa-pen"></i></button>
-                        <button onclick="deleteDish(${dish.id})" class="bg-red-50 hover:bg-red-100 text-red-600 p-1.5 rounded-lg text-xs"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function openAddDishModal() {
@@ -568,6 +611,7 @@
             document.getElementById('dishImageInput').value = '';
             document.getElementById('dishDescInput').value = '';
             document.getElementById('dishIngredientsInput').value = '';
+            document.getElementById('dishOptionsInput').value = '';
             document.getElementById('dishModal').classList.remove('hidden');
         }
 
@@ -582,6 +626,14 @@
             document.getElementById('dishImageInput').value = dish.image;
             document.getElementById('dishDescInput').value = dish.desc || '';
             document.getElementById('dishIngredientsInput').value = dish.ingredients || '';
+            
+            // 将 options 对象数组转换为文本框可编辑的格式
+            let optionsText = '';
+            if (dish.options && dish.options.length > 0) {
+                optionsText = dish.options.map(o => `${o.name}:${o.price}:${o.ingredients || ''}`).join(', ');
+            }
+            document.getElementById('dishOptionsInput').value = optionsText;
+
             document.getElementById('dishModal').classList.remove('hidden');
         }
 
@@ -597,10 +649,29 @@
             let image = document.getElementById('dishImageInput').value.trim();
             let desc = document.getElementById('dishDescInput').value.trim();
             let ingredients = document.getElementById('dishIngredientsInput').value.trim();
+            let optionsStr = document.getElementById('dishOptionsInput').value.trim();
 
             if (!name || isNaN(price)) {
                 alert('请填写完整的菜品名称和有效价格！');
                 return;
+            }
+
+            // 解析配菜字符串转为对象数组
+            let parsedOptions = [];
+            if (optionsStr) {
+                let parts = optionsStr.split(/[,，]/);
+                parts.forEach(p => {
+                    p = p.trim();
+                    if (!p) return;
+                    let sub = p.split(':');
+                    if (sub.length >= 2) {
+                        parsedOptions.push({
+                            name: sub[0].trim(),
+                            price: parseFloat(sub[1]) || 0,
+                            ingredients: sub[2] ? sub[2].trim() : ''
+                        });
+                    }
+                });
             }
 
             await fetchAllData();
@@ -615,6 +686,7 @@
                     dish.image = image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
                     dish.desc = desc;
                     dish.ingredients = ingredients;
+                    dish.options = parsedOptions;
                 }
             } else {
                 cloudData.dishes.push({
@@ -624,7 +696,8 @@
                     price: price,
                     image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
                     desc: desc,
-                    ingredients: ingredients
+                    ingredients: ingredients,
+                    options: parsedOptions
                 });
             }
 
