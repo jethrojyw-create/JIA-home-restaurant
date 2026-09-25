@@ -97,7 +97,7 @@
         </div>
     </main>
 
-    <!-- 🌟 超市采购勾选大屏模式弹窗 -->
+    <!-- 🌟 超市采购勾选大屏模式弹窗（含修改/删除/手动加购） -->
     <div id="supermarketModal" class="fixed inset-0 bg-white z-50 flex flex-col hidden">
         <div class="bg-emerald-600 text-white px-4 py-3 flex justify-between items-center shadow-md">
             <div class="flex items-center space-x-2">
@@ -107,11 +107,44 @@
             <button onclick="closeSupermarketMode()" class="bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition">保存退出</button>
         </div>
         <div class="bg-emerald-50 px-4 py-2 text-[11px] text-emerald-800 border-b flex justify-between items-center">
-            <span>在超市买一样勾选一样！</span>
+            <span>买一样勾选一样，支持现场修改或删除！</span>
             <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
         </div>
         <div id="supermarketListContainer" class="flex-1 overflow-y-auto p-3 space-y-2.5 max-w-lg mx-auto w-full">
             <!-- 动态生成超市原材料勾选列表 -->
+        </div>
+        <div class="p-3 bg-white border-t max-w-lg mx-auto w-full">
+            <button onclick="openAddManualShoppingItem()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-bold text-xs shadow-md transition">
+                <i class="fa-solid fa-plus mr-1"></i> 在超市临时加买一项
+            </button>
+        </div>
+    </div>
+
+    <!-- 临时加购 / 修改原材料弹窗 -->
+    <div id="manualItemModal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-3">
+        <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
+            <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">临时加买原材料</h3>
+            <input type="hidden" id="editManualKey">
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="text-gray-500 block mb-1">原材料名称</label>
+                    <input type="text" id="manualNameInput" placeholder="例如：洗洁精 / 纸巾" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                </div>
+                <div class="flex space-x-2">
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">数量</label>
+                        <input type="number" id="manualTotalInput" placeholder="1" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="text-gray-500 block mb-1">单位</label>
+                        <input type="text" id="manualUnitInput" placeholder="个 / 瓶 / g" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-2 pt-1">
+                <button onclick="closeManualModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold transition">取消</button>
+                <button onclick="saveManualItem()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-xl text-xs font-bold transition">保存</button>
+            </div>
         </div>
     </div>
 
@@ -163,7 +196,7 @@
 
     <script>
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-        let cloudData = { dishes: [], orders: [], checkedIngredients: {} };
+        let cloudData = { dishes: [], orders: [], checkedIngredients: {}, manualIngredients: [] };
         let currentTab = 'summary';
 
         async function fetchAllData() {
@@ -175,6 +208,7 @@
                     if (!cloudData.dishes) cloudData.dishes = [];
                     if (!cloudData.orders) cloudData.orders = [];
                     if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
+                    if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
                 }
             } catch (e) {
                 console.log('同步云端数据失败', e);
@@ -259,14 +293,14 @@
                                 let ingName = match[1].trim();
                                 let val = parseFloat(match[2]);
                                 let unit = match[3] ? match[3].trim() : '';
-                                let key = `${ingName}_${unit}`;
+                                let key = `auto_${ingName}_${unit}`;
 
                                 if (!ingredientSummary[key]) {
                                     ingredientSummary[key] = { key: key, name: ingName, unit: unit, total: 0 };
                                 }
                                 ingredientSummary[key].total += val * times;
                             } else {
-                                let key = `other_${part}`;
+                                let key = `auto_other_${part}`;
                                 if (!ingredientSummary[key]) {
                                     ingredientSummary[key] = { key: key, name: part, unit: '', total: 0, isText: true };
                                 }
@@ -277,7 +311,22 @@
                 });
             });
 
-            return Object.values(ingredientSummary);
+            let list = Object.values(ingredientSummary);
+
+            // 加上用户在超市手动加购的项目
+            if (cloudData.manualIngredients) {
+                cloudData.manualIngredients.forEach(m => {
+                    list.push({
+                        key: m.key,
+                        name: m.name,
+                        unit: m.unit,
+                        total: m.total,
+                        isManual: true
+                    });
+                });
+            }
+
+            return list;
         }
 
         function renderSummaryIngredients() {
@@ -485,14 +534,14 @@
             renderAll();
         }
 
-        // 🌟 超市采购勾选模式（状态持久化修复）
+        // 🌟 超市采购模式（支持勾选、临时加购、修改、删除）
         function openSupermarketMode() {
             document.getElementById('supermarketModal').classList.remove('hidden');
             renderSupermarketList();
         }
         async function closeSupermarketMode() {
             document.getElementById('supermarketModal').classList.add('hidden');
-            await saveAllData(); // 退出时自动保存勾选状态到云端
+            await saveAllData();
             renderAll();
         }
 
@@ -515,15 +564,23 @@
                 let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
                 let isChecked = !!cloudData.checkedIngredients[item.key];
                 return `
-                    <div onclick="toggleSupermarketItem('${item.key}')" class="bg-white p-3.5 rounded-2xl border ${isChecked ? 'border-emerald-300 bg-emerald-50/40 opacity-70 line-through' : 'border-gray-200 shadow-xs'} flex items-center justify-between cursor-pointer transition">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-6 h-6 rounded-lg border-2 ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white flex items-center justify-center text-xs' : 'border-gray-300'}">
+                    <div class="bg-white p-3 rounded-2xl border ${isChecked ? 'border-emerald-300 bg-emerald-50/40 opacity-70 line-through' : 'border-gray-200 shadow-xs'} flex items-center justify-between transition">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer" onclick="toggleSupermarketItem('${item.key}')">
+                            <div class="w-6 h-6 rounded-lg border-2 shrink-0 ${isChecked ? 'bg-emerald-600 border-emerald-600 text-white flex items-center justify-center text-xs' : 'border-gray-300'}">
                                 ${isChecked ? '<i class="fa-solid fa-check"></i>' : ''}
                             </div>
-                            <div>
-                                <h4 class="font-bold text-sm text-gray-800">${item.name}</h4>
+                            <div class="min-w-0">
+                                <h4 class="font-bold text-sm text-gray-800 truncate">${item.name}</h4>
                                 <p class="text-xs text-amber-700 font-semibold">需采购: ${displayTotal}${item.unit || '份'}</p>
                             </div>
+                        </div>
+                        <div class="flex items-center space-x-1 shrink-0 ml-2">
+                            ${item.isManual ? `
+                                <button onclick="openEditManualItem('${item.key}')" class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteManualItem('${item.key}')" class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs"><i class="fa-solid fa-trash"></i></button>
+                            ` : `
+                                <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}')" class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-xs" title="调整数量"><i class="fa-solid fa-pen"></i></button>
+                            `}
                         </div>
                     </div>
                 `;
@@ -534,7 +591,81 @@
             if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
             cloudData.checkedIngredients[key] = !cloudData.checkedIngredients[key];
             renderSupermarketList();
-            await saveAllData(); // 每次勾选实时保存到云端
+            await saveAllData();
+        }
+
+        // 临时加购 / 修改弹窗控制
+        function openAddManualShoppingItem() {
+            document.getElementById('manualModalTitle').innerText = '临时加买原材料';
+            document.getElementById('editManualKey').value = '';
+            document.getElementById('manualNameInput').value = '';
+            document.getElementById('manualTotalInput').value = '';
+            document.getElementById('manualUnitInput').value = '';
+            document.getElementById('manualItemModal').classList.remove('hidden');
+        }
+
+        function openEditManualItem(key, name = '', total = '', unit = '') {
+            document.getElementById('manualModalTitle').innerText = '修改采购项目';
+            document.getElementById('editManualKey').value = key;
+            document.getElementById('manualNameInput').value = name;
+            document.getElementById('manualTotalInput').value = total;
+            document.getElementById('manualUnitInput').value = unit;
+            document.getElementById('manualItemModal').classList.remove('hidden');
+        }
+
+        function closeManualModal() {
+            document.getElementById('manualItemModal').classList.add('hidden');
+        }
+
+        async function saveManualItem() {
+            let key = document.getElementById('editManualKey').value;
+            let name = document.getElementById('manualNameInput').value.trim();
+            let total = parseFloat(document.getElementById('manualTotalInput').value);
+            let unit = document.getElementById('manualUnitInput').value.trim();
+
+            if (!name || isNaN(total)) {
+                alert('请填写完整的名称和有效数量！');
+                return;
+            }
+
+            await fetchAllData();
+            if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
+
+            if (key && key.startsWith('manual_')) {
+                let item = cloudData.manualIngredients.find(m => m.key === key);
+                if (item) {
+                    item.name = name;
+                    item.total = total;
+                    item.unit = unit;
+                }
+            } else {
+                let newKey = 'manual_' + Date.now();
+                cloudData.manualIngredients.push({
+                    key: newKey,
+                    name: name,
+                    total: total,
+                    unit: unit
+                });
+            }
+
+            await saveAllData();
+            closeManualModal();
+            renderSupermarketList();
+            renderSummaryIngredients();
+        }
+
+        async function deleteManualItem(key) {
+            if (!confirm('确定要删除这项采购记录吗？')) return;
+            await fetchAllData();
+            if (cloudData.manualIngredients) {
+                cloudData.manualIngredients = cloudData.manualIngredients.filter(m => m.key !== key);
+            }
+            if (cloudData.checkedIngredients) {
+                delete cloudData.checkedIngredients[key];
+            }
+            await saveAllData();
+            renderSupermarketList();
+            renderSummaryIngredients();
         }
     </script>
 </body>
