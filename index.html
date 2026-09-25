@@ -126,8 +126,17 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
+    <!-- 🖼️ 图片放大预览弹窗 -->
+    <div id="imageModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-4" onclick="closeImageModal()">
+        <div class="relative max-w-lg w-full flex flex-col items-center" onclick="event.stopPropagation()">
+            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300 transition"><i class="fa-solid fa-xmark"></i></button>
+            <img id="enlargedImg" src="" class="max-h-[75vh] max-w-full rounded-2xl shadow-2xl object-contain bg-black/20">
+            <p id="enlargedTitle" class="text-white text-sm mt-3 font-bold tracking-wide"></p>
+        </div>
+    </div>
+
+    <script[cite: 1]>
+        const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';[cite: 1]
         let cloudData = { dishes: [], orders: [] };
         let currentUser = '';
         let selectedDay = '周一';
@@ -135,7 +144,6 @@
         let cart = {}; 
         let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
-        // 🌟 智能菜名与分类翻译映射词典 (可自动识别常见菜名并翻译成地道英文)
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
             "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
@@ -160,7 +168,7 @@
 
         function translateDishName(name) {
             if (currentLang === 'en') {
-                return dishTranslationMap[name] || name; // 如果词典里没有，默认返回原名
+                return dishTranslationMap[name] || name; 
             }
             return name;
         }
@@ -255,7 +263,7 @@
 
         async function fetchAllData() {
             try {
-                let res = await fetch(API_URL + '?t=' + Date.now());
+                let res = await fetch(API_URL + '?t=' + Date.now());[cite: 1]
                 let json = await res.json();
                 if (json) {
                     cloudData.dishes = json.dishes || [];
@@ -285,7 +293,7 @@
                 if (cloudData.dishes && cloudData.dishes.length > 0) {
                     localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
                 }
-                await fetch(API_URL, {
+                await fetch(API_URL, {[cite: 1]
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cloudData)
@@ -353,7 +361,8 @@
                 return `
                     <div class="bg-white rounded-2xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
-                            <img src="${dish.image}" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0">
+                            <!-- 点击图片触发放大 -->
+                            <img src="${dish.image}" onclick="openImageModal('${dish.image}', '${displayName}')" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0 cursor-pointer hover:opacity-95 transition" title="点击查看大图">
                             <div class="space-y-0.5 flex-1 min-w-0">
                                 <div class="flex items-center space-x-1.5">
                                     <h3 class="font-bold text-xs text-gray-800 truncate">${displayName}</h3>
@@ -370,6 +379,18 @@
                     </div>
                 `;
             }).join('');
+        }
+
+        // 打开图片大图弹窗
+        function openImageModal(url, title) {
+            document.getElementById('enlargedImg').src = url;
+            document.getElementById('enlargedTitle').innerText = title || '';
+            document.getElementById('imageModal').classList.remove('hidden');
+        }
+
+        // 关闭图片大图弹窗
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.add('hidden');
         }
 
         function changeCart(dishId, delta) {
