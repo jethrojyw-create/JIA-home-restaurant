@@ -135,6 +135,43 @@
         let cart = {}; 
         let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
+        // 🌟 智能菜名与分类翻译映射词典 (可自动识别常见菜名并翻译成地道英文)
+        const dishTranslationMap = {
+            "红烧肉": "Braised Pork Belly",
+            "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
+            "宫保鸡丁": "Kung Pao Chicken",
+            "麻婆豆腐": "Mapo Tofu",
+            "水煮肉片": "Boiled Pork Slices",
+            "清蒸鱼": "Steamed Fish",
+            "拍黄瓜": "Smashed Cucumbers",
+            "酸辣汤": "Hot and Sour Soup",
+            "蛋炒饭": "Egg Fried Rice",
+            "红烧排骨": "Braised Pork Ribs",
+            "糖醋里脊": "Sweet and Sour Pork",
+            "地三鲜": "Stir-fried Potatoes, Eggplants and Peppers"
+        };
+
+        const categoryTranslationMap = {
+            "热菜": "Hot Dish",
+            "凉菜": "Cold Dish",
+            "主食/汤品": "Staple / Soup",
+            "饮品/甜点": "Drink / Dessert"
+        };
+
+        function translateDishName(name) {
+            if (currentLang === 'en') {
+                return dishTranslationMap[name] || name; // 如果词典里没有，默认返回原名
+            }
+            return name;
+        }
+
+        function translateCategory(cat) {
+            if (currentLang === 'en') {
+                return categoryTranslationMap[cat] || cat;
+            }
+            return cat;
+        }
+
         const i18nText = {
             zh: {
                 app_title: "家庭全周大采购",
@@ -204,7 +241,6 @@
                 let key = el.getAttribute('data-i18n');
                 el.innerText = t(key);
             });
-            // 翻译星期标签
             document.querySelectorAll('.day-btn').forEach(btn => {
                 let dayKey = btn.getAttribute('data-i18n-day');
                 btn.innerText = t(dayKey);
@@ -312,14 +348,16 @@
 
             container.innerHTML = dishes.map(dish => {
                 let count = cart[dish.id] || 0;
+                let displayName = translateDishName(dish.name);
+                let displayCat = translateCategory(dish.category || '热菜');
                 return `
                     <div class="bg-white rounded-2xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
                             <img src="${dish.image}" class="w-14 h-14 object-cover rounded-xl shadow-xs shrink-0">
                             <div class="space-y-0.5 flex-1 min-w-0">
                                 <div class="flex items-center space-x-1.5">
-                                    <h3 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h3>
-                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded font-medium shrink-0">${dish.category || '热菜'}</span>
+                                    <h3 class="font-bold text-xs text-gray-800 truncate">${displayName}</h3>
+                                    <span class="text-[9px] bg-amber-50 text-amber-700 px-1.5 py-0.2 rounded font-medium shrink-0">${displayCat}</span>
                                 </div>
                                 <p class="text-[10px] text-gray-400 truncate">${dish.desc || ''}</p>
                                 <p class="text-xs font-bold text-amber-600">¥${dish.price}</p>
@@ -354,7 +392,7 @@
                 if (dish) {
                     totalCount += count;
                     totalPrice += dish.price * count;
-                    previewHtml += `<div class="flex justify-between truncate"><span>${dish.name} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
+                    previewHtml += `<div class="flex justify-between truncate"><span>${translateDishName(dish.name)} x${count}</span><span class="font-bold">¥${dish.price * count}</span></div>`;
                 }
             }
 
@@ -432,7 +470,7 @@
                                     <span class="text-[10px] px-2 py-0.5 rounded font-bold ${statusColor}">${statusText}</span>
                                 </div>
                                 <div class="space-y-0.5 text-xs text-gray-700">
-                                    ${order.items.map(i => `<div class="flex justify-between"><span>${i.name} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`).join('')}
+                                    ${order.items.map(i => `<div class="flex justify-between"><span>${translateDishName(i.name)} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`).join('')}
                                 </div>
                             </div>
                         `;
@@ -465,7 +503,7 @@
                             <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${statusColor}">${statusText}</span>
                         </div>
                         <div class="space-y-0.5 text-xs text-gray-700">
-                            ${order.items.map(i => `<div class="flex justify-between"><span>${i.name} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`).join('')}
+                            ${order.items.map(i => `<div class="flex justify-between"><span>${translateDishName(i.name)} x${i.count}</span><span class="font-bold">¥${i.price * i.count}</span></div>`).join('')}
                         </div>
                         <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
                             <span class="text-gray-400">${order.time || ''}</span>
