@@ -13,7 +13,7 @@
     <header class="bg-white shadow-xs sticky top-0 z-40 px-4 py-3 flex justify-between items-center">
         <div class="flex items-center space-x-2">
             <span class="text-2xl">🛒</span>
-            <h1 class="font-bold text-base text-amber-900">周末集中采购与全周订单</h1>
+            <h1 class="font-bold text-base text-amber-900">周末集中采购管理后台</h1>
         </div>
         <div class="flex items-center space-x-2">
             <button onclick="openDishModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-2 rounded-full transition flex items-center space-x-1 shadow-xs">
@@ -42,11 +42,25 @@
             </div>
         </div>
 
-        <!-- 按星期查看的采购与订单看板 -->
+        <!-- 🌟 核心新功能：全周智能采购清单汇总面板 -->
+        <section class="bg-white rounded-2xl border border-amber-200 shadow-sm p-4 space-y-3">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-base text-amber-900 flex items-center">
+                    <i class="fa-solid fa-basket-shopping mr-2 text-amber-600"></i>周末一站式采购原材料清单
+                </h3>
+                <span class="text-[11px] bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-medium">自动汇总</span>
+            </div>
+            <p class="text-xs text-gray-500">根据全周（周一至周日）所有家庭成员点单自动合并计算所需原材料：</p>
+            <div id="masterIngredientsList" class="space-y-2 pt-1">
+                <div class="text-center py-6 text-gray-400 text-xs">正在计算全周原材料...</div>
+            </div>
+        </section>
+
+        <!-- 按星期查看的订单看板 -->
         <section>
             <div class="flex justify-between items-center mb-3">
                 <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-calendar-days mr-1.5"></i>按星期分类查看订单</h3>
-                <span class="text-xs text-gray-400">周末一站式采购清单</span>
+                <span class="text-xs text-gray-400">核对每日安排</span>
             </div>
 
             <!-- 星期切换标签 -->
@@ -69,15 +83,15 @@
         <!-- 菜单库管理 -->
         <section class="pt-2">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-utensils mr-1.5"></i>菜单库管理</h3>
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-utensils mr-1.5"></i>菜单库管理（含原材料配置）</h3>
             </div>
             <div id="dishManageContainer" class="grid grid-cols-1 gap-3"></div>
         </section>
     </main>
 
-    <!-- 添加/修改菜品弹窗 -->
+    <!-- 添加/修改菜品弹窗（含原材料输入） -->
     <div id="dishModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
+        <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center pb-2 border-b">
                 <h3 id="modalTitle" class="font-bold text-base text-amber-900">新增菜品</h3>
                 <button onclick="toggleDishModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -111,6 +125,11 @@
                     <label class="block text-xs text-gray-500 mb-1">菜品简介/描述</label>
                     <input type="text" id="newDishDesc" placeholder="酸甜可口，老少皆宜" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500">
                 </div>
+                <div>
+                    <label class="block text-xs text-amber-700 font-bold mb-1"><i class="fa-solid fa-basket-shopping mr-1"></i>所需原材料（用于周末采购清单汇总）</label>
+                    <textarea id="newDishIngredients" rows="2" placeholder="例如：排骨 500g, 冰糖 30g, 生抽 20ml" class="w-full bg-amber-50/50 border border-amber-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500 text-xs"></textarea>
+                    <p class="text-[10px] text-gray-400 mt-0.5">提示：多项原材料请用逗号隔开，方便合并统计。</p>
+                </div>
             </div>
             <div class="pt-2 flex space-x-3">
                 <button onclick="toggleDishModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium transition">取消</button>
@@ -120,12 +139,10 @@
     </div>
 
     <script>
-        // ======================== 你的 npoint 接口 ========================
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-        // =================================================================
 
         let cloudData = { dishes: [], orders: [] };
-        let selectedAdminDay = '周一'; // 后台当前查看的星期
+        let selectedAdminDay = '周一';
 
         async function fetchAllData() {
             try {
@@ -170,12 +187,13 @@
             const orders = cloudData.orders || [];
             const dishes = cloudData.dishes || [];
 
-            // 全周总统计
+            // 统计横幅
             document.getElementById('totalOrderCount').innerText = `${orders.length} 单`;
             const totalSales = orders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
             document.getElementById('totalSales').innerText = `¥${totalSales}`;
 
             renderDayOrders();
+            renderMasterIngredients(orders, dishes);
 
             // 渲染菜单管理
             const dishContainer = document.getElementById('dishManageContainer');
@@ -186,9 +204,10 @@
                     <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-3">
                             <img src="${dish.image}" class="w-12 h-12 object-cover rounded-lg">
-                            <div>
+                            <div class="space-y-0.5">
                                 <h4 class="font-bold text-sm text-gray-800">${dish.name} <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded ml-1">${dish.category || '热菜'}</span></h4>
-                                <p class="text-xs text-amber-600 font-semibold mt-0.5">¥${dish.price} <span class="text-gray-400 font-normal ml-1">(${dish.desc || ''})</span></p>
+                                <p class="text-xs text-amber-600 font-semibold">¥${dish.price}</p>
+                                <p class="text-[11px] text-gray-400">配料: ${dish.ingredients || '未填写原材料'}</p>
                             </div>
                         </div>
                         <div class="flex items-center space-x-1">
@@ -197,6 +216,52 @@
                         </div>
                     </div>
                 `).join('');
+            }
+        }
+
+        // 核心算法：智能汇总全周原材料采购清单
+        function renderMasterIngredients(orders, dishes) {
+            const container = document.getElementById('masterIngredientsList');
+            
+            if (orders.length === 0) {
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">全周暂无订单，暂无采购需求~</div>`;
+                return;
+            }
+
+            // 统计每道菜全周被点了多少份
+            let dishCountMap = {}; // { dishName: totalCount }
+            orders.forEach(order => {
+                if (order.items) {
+                    order.items.forEach(item => {
+                        dishCountMap[item.name] = (dishCountMap[item.name] || 0) + item.count;
+                    });
+                }
+            });
+
+            // 搜集原材料并进行归类展示
+            let summaryHTML = '';
+            let hasAnyIngredient = false;
+
+            dishes.forEach(dish => {
+                let totalOrdered = dishCountMap[dish.name] || 0;
+                if (totalOrdered > 0 && dish.ingredients) {
+                    hasAnyIngredient = true;
+                    summaryHTML += `
+                        <div class="bg-amber-50/60 border border-amber-100 p-2.5 rounded-xl text-xs space-y-1">
+                            <div class="flex justify-between font-bold text-amber-900">
+                                <span>${dish.name}</span>
+                                <span class="bg-amber-600 text-white px-2 py-0.2 rounded text-[10px]">全周共点 ${totalOrdered} 份</span>
+                            </div>
+                            <p class="text-gray-600"><span class="font-medium text-amber-800">原材料需求：</span>${dish.ingredients}</p>
+                        </div>
+                    `;
+                }
+            });
+
+            if (!hasAnyIngredient) {
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">已有点单，但对应的菜品未填写“原材料”，请在下方菜单库中补充。</div>`;
+            } else {
+                container.innerHTML = summaryHTML;
             }
         }
 
@@ -274,6 +339,7 @@
             document.getElementById('newDishCategory').value = '热菜';
             document.getElementById('newDishImage').value = '';
             document.getElementById('newDishDesc').value = '';
+            document.getElementById('newDishIngredients').value = '';
             document.getElementById('dishModal').classList.remove('hidden');
         }
 
@@ -287,6 +353,7 @@
             document.getElementById('newDishCategory').value = dish.category || '热菜';
             document.getElementById('newDishImage').value = dish.image || '';
             document.getElementById('newDishDesc').value = dish.desc || '';
+            document.getElementById('newDishIngredients').value = dish.ingredients || '';
             document.getElementById('dishModal').classList.remove('hidden');
         }
 
@@ -297,6 +364,7 @@
             const category = document.getElementById('newDishCategory').value;
             let image = document.getElementById('newDishImage').value.trim();
             const desc = document.getElementById('newDishDesc').value.trim();
+            const ingredients = document.getElementById('newDishIngredients').value.trim();
 
             if (!name || isNaN(price)) {
                 alert('请填写完整的菜品名称和正确价格！');
@@ -318,6 +386,7 @@
                     dish.category = category;
                     dish.image = image;
                     dish.desc = desc;
+                    dish.ingredients = ingredients;
                 }
             } else {
                 const newDish = {
@@ -326,7 +395,8 @@
                     price,
                     category,
                     image,
-                    desc: desc || ''
+                    desc: desc || '',
+                    ingredients: ingredients || ''
                 };
                 cloudData.dishes.push(newDish);
             }
@@ -334,7 +404,7 @@
             await saveAllData();
             toggleDishModal();
             renderDashboard();
-            alert('菜品保存成功！');
+            alert('菜品及原材料保存成功！');
         }
 
         async function deleteDish(dishId) {
