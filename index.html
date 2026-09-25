@@ -34,7 +34,7 @@
         </div>
     </header>
 
-    <!-- 星期选择栏（新增核心：为星期几点餐） -->
+    <!-- 星期选择栏 -->
     <div class="bg-amber-900 text-white px-4 py-2 sticky top-[57px] z-30 shadow-md">
         <div class="text-[11px] text-amber-200 mb-1 flex justify-between items-center">
             <span>📅 请先选择你要为星期几安排饭菜：</span>
@@ -121,19 +121,17 @@
     </div>
 
     <script>
-        // ======================== 你的 npoint 接口 ========================
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5'; 
-        // =================================================================
 
         let cloudData = { dishes: [], orders: [] };
         let cart = [];
         let currentCategory = '全部';
-        let targetDay = '周一'; // 默认当前选择为周一
+        let targetDay = '周一';
 
         const defaultDishes = [
-            { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜' },
-            { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味' },
-            { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃' }
+            { id: 1, name: '招牌红烧肉', price: 68, category: '热菜', image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300', desc: '肥而不腻，软糯香甜', ingredients: '五花肉 500g, 冰糖 30g, 生抽 30ml, 八角 2个' },
+            { id: 2, name: '清蒸鲜鲈鱼', price: 58, category: '热菜', image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300', desc: '肉质鲜嫩，原汁原味', ingredients: '鲜活鲈鱼 1条, 葱姜 适量, 蒸鱼豉油 20ml' },
+            { id: 3, name: '老醋黄瓜', price: 18, category: '凉菜', image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=300', desc: '清爽解腻，酸甜开胃', ingredients: '鲜黄瓜 2根, 大蒜 3瓣, 陈醋 15ml, 辣椒油 适量' }
         ];
 
         async function fetchCloudData() {
@@ -211,8 +209,9 @@
                                 <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded">${dish.category || '热菜'}</span>
                             </div>
                             <p class="text-xs text-gray-400 line-clamp-1 mt-1">${dish.desc || '美味家常菜'}</p>
+                            ${dish.ingredients ? `<p class="text-[11px] text-amber-700/80 mt-0.5 line-clamp-1"><i class="fa-solid fa-basket-shopping mr-1"></i>配料: ${dish.ingredients}</p>` : ''}
                         </div>
-                        <div class="flex justify-between items-center mt-3">
+                        <div class="flex justify-between items-center mt-2">
                             <span class="text-amber-600 font-bold text-base">¥${dish.price}</span>
                             <div class="flex items-center space-x-2">
                                 <button onclick="updateCart(${dish.id}, -1)" class="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-sm">-</button>
@@ -354,7 +353,7 @@
             const newOrder = {
                 id: Date.now(),
                 user: user,
-                targetDay: targetDay, // 记录是星期几的菜
+                targetDay: targetDay,
                 items: JSON.parse(JSON.stringify(cart)),
                 totalPrice: cart.reduce((sum, i) => sum + i.price * i.count, 0),
                 time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
