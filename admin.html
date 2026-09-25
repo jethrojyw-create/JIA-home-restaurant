@@ -16,7 +16,7 @@
             <h1 class="font-bold text-base text-amber-900">家庭大厨管理后台</h1>
         </div>
         <div class="flex items-center space-x-2">
-            <button onclick="toggleDishModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-2 rounded-full transition flex items-center space-x-1 shadow-xs">
+            <button onclick="openDishModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-3 py-2 rounded-full transition flex items-center space-x-1 shadow-xs">
                 <i class="fa-solid fa-plus"></i>
                 <span>添加新菜品</span>
             </button>
@@ -45,8 +45,8 @@
         <!-- 订单列表 -->
         <section>
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid id-card mr-1.5"></i>实时点餐订单</h3>
-                <span class="text-xs text-gray-400">数据自动同步中</span>
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-clipboard-list mr-1.5"></i>实时点餐订单</h3>
+                <span class="text-xs text-gray-400">自动同步中</span>
             </div>
             <div id="ordersContainer" class="space-y-3">
                 <div class="text-center py-16 text-gray-400 text-sm">正在加载云端订单...</div>
@@ -56,7 +56,7 @@
         <!-- 现有菜单管理预览 -->
         <section class="pt-2">
             <div class="flex justify-between items-center mb-3">
-                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-utensils mr-1.5"></i>当前菜单库</h3>
+                <h3 class="font-bold text-base text-amber-900"><i class="fa-solid fa-utensils mr-1.5"></i>当前菜单库管理</h3>
             </div>
             <div id="dishManageContainer" class="grid grid-cols-1 gap-3">
                 <!-- 菜品列表动态渲染 -->
@@ -64,13 +64,14 @@
         </section>
     </main>
 
-    <!-- 添加菜品弹窗 -->
+    <!-- 添加/修改菜品弹窗 -->
     <div id="dishModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white w-full max-w-md rounded-2xl p-5 shadow-2xl space-y-4">
             <div class="flex justify-between items-center pb-2 border-b">
-                <h3 class="font-bold text-base text-amber-900">新增菜品</h3>
+                <h3 id="modalTitle" class="font-bold text-base text-amber-900">新增菜品</h3>
                 <button onclick="toggleDishModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
+            <input type="hidden" id="editDishId">
             <div class="space-y-3 text-sm">
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">菜品名称</label>
@@ -83,7 +84,7 @@
                     </div>
                     <div class="flex-1">
                         <label class="block text-xs text-gray-500 mb-1">分类</label>
-                        <select id="newDishCategory" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500">
+                        <select id="newDishCategory" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-amber-500 bg-white">
                             <option value="热菜">热菜</option>
                             <option value="凉菜">凉菜</option>
                             <option value="主食/汤品">主食/汤品</option>
@@ -102,15 +103,15 @@
             </div>
             <div class="pt-2 flex space-x-3">
                 <button onclick="toggleDishModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl font-medium transition">取消</button>
-                <button onclick="addNewDish()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-medium shadow-md transition">确认添加</button>
+                <button onclick="saveDish()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl font-medium shadow-md transition">保存菜品</button>
             </div>
         </div>
     </div>
 
     <script>
-        // ======================== 使用同一个 Bin ID 对应你的 npoint.io 网址 ========================
+        // ======================== npoint 接口配置 ========================
         const API_URL = 'https://api.npoint.io/692e9e8f65204c754fc5';
-        // =========================================================================================
+        // ================================================================
 
         let cloudData = { dishes: [], orders: [] };
 
@@ -191,21 +192,24 @@
                 `).join('');
             }
 
-            // 渲染菜单管理列表
+            // 渲染菜单管理列表（附带修改按钮）
             const dishContainer = document.getElementById('dishManageContainer');
             if (dishes.length === 0) {
-                dishContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs">菜单库暂无菜品</div>`;
+                dishContainer.innerHTML = `<div class="text-center py-6 text-gray-400 text-xs bg-white rounded-xl border">菜单库暂无菜品</div>`;
             } else {
                 dishContainer.innerHTML = dishes.map(dish => `
-                    <div class="bg-white rounded-xl border border-gray-100 p-2.5 flex items-center justify-between shadow-xs">
+                    <div class="bg-white rounded-xl border border-gray-100 p-3 flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-3">
                             <img src="${dish.image}" class="w-12 h-12 object-cover rounded-lg">
                             <div>
-                                <h4 class="font-bold text-sm text-gray-800">${dish.name}</h4>
-                                <p class="text-xs text-amber-600 font-semibold">¥${dish.price} <span class="text-gray-400 font-normal ml-1">(${dish.category})</span></p>
+                                <h4 class="font-bold text-sm text-gray-800">${dish.name} <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded ml-1">${dish.category || '热菜'}</span></h4>
+                                <p class="text-xs text-amber-600 font-semibold mt-0.5">¥${dish.price} <span class="text-gray-400 font-normal ml-1">(${dish.desc || '暂无描述'})</span></p>
                             </div>
                         </div>
-                        <button onclick="deleteDish(${dish.id})" class="text-gray-300 hover:text-red-500 p-2 transition"><i class="fa-solid fa-trash text-sm"></i></button>
+                        <div class="flex items-center space-x-1">
+                            <button onclick="openEditDishModal(${dish.id})" class="text-gray-400 hover:text-amber-600 p-2 transition" title="修改"><i class="fa-solid fa-pen-to-square"></i></button>
+                            <button onclick="deleteDish(${dish.id})" class="text-gray-300 hover:text-red-500 p-2 transition" title="删除"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </div>
                 `).join('');
             }
@@ -233,7 +237,32 @@
             document.getElementById('dishModal').classList.toggle('hidden');
         }
 
-        async function addNewDish() {
+        function openDishModal() {
+            document.getElementById('modalTitle').innerText = '新增菜品';
+            document.getElementById('editDishId').value = '';
+            document.getElementById('newDishName').value = '';
+            document.getElementById('newDishPrice').value = '';
+            document.getElementById('newDishCategory').value = '热菜';
+            document.getElementById('newDishImage').value = '';
+            document.getElementById('newDishDesc').value = '';
+            document.getElementById('dishModal').classList.remove('hidden');
+        }
+
+        function openEditDishModal(id) {
+            const dish = (cloudData.dishes || []).find(d => d.id === id);
+            if (!dish) return;
+            document.getElementById('modalTitle').innerText = '修改菜品';
+            document.getElementById('editDishId').value = dish.id;
+            document.getElementById('newDishName').value = dish.name;
+            document.getElementById('newDishPrice').value = dish.price;
+            document.getElementById('newDishCategory').value = dish.category || '热菜';
+            document.getElementById('newDishImage').value = dish.image || '';
+            document.getElementById('newDishDesc').value = dish.desc || '';
+            document.getElementById('dishModal').classList.remove('hidden');
+        }
+
+        async function saveDish() {
+            const editId = document.getElementById('editDishId').value;
             const name = document.getElementById('newDishName').value.trim();
             const price = parseFloat(document.getElementById('newDishPrice').value);
             const category = document.getElementById('newDishCategory').value;
@@ -241,48 +270,54 @@
             const desc = document.getElementById('newDishDesc').value.trim();
 
             if (!name || isNaN(price)) {
-                alert('请填写完整的菜品名称和价格！');
+                alert('请填写完整的菜品名称和正确价格！');
                 return;
             }
 
             if (!image) {
-                image = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300'; // 默认美食图片
+                image = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300';
             }
 
             await fetchAllData();
             if (!cloudData.dishes) cloudData.dishes = [];
 
-            const newDish = {
-                id: Date.now(),
-                name,
-                price,
-                category,
-                image,
-                desc: desc || '美味家常菜'
-            };
+            if (editId) {
+                // 修改已有菜品
+                let dish = cloudData.dishes.find(d => d.id == editId);
+                if (dish) {
+                    dish.name = name;
+                    dish.price = price;
+                    dish.category = category;
+                    dish.image = image;
+                    dish.desc = desc;
+                }
+            } else {
+                // 新增菜品
+                const newDish = {
+                    id: Date.now(),
+                    name,
+                    price,
+                    category,
+                    image,
+                    desc: desc || '美味家常菜'
+                };
+                cloudData.dishes.push(newDish);
+            }
 
-            cloudData.dishes.push(newDish);
             await saveAllData();
             toggleDishModal();
             renderDashboard();
-
-            // 清空输入框
-            document.getElementById('newDishName').value = '';
-            document.getElementById('newDishPrice').value = '';
-            document.getElementById('newDishImage').value = '';
-            document.getElementById('newDishDesc').value = '';
-            alert('新菜品添加成功！前台点餐页面将同步更新。');
+            alert('菜品保存成功！');
         }
 
         async function deleteDish(dishId) {
-            if (!confirm('确定要从菜单中下架并删除这个菜品吗？')) return;
+            if (!confirm('确定要下架并删除这道菜吗？')) return;
             await fetchAllData();
             cloudData.dishes = (cloudData.dishes || []).filter(d => d.id !== dishId);
             await saveAllData();
             renderDashboard();
         }
 
-        // 定时轮询（每隔 5 秒自动同步一次最新订单，方便大厨实时接单）
         setInterval(fetchAllData, 5000);
         fetchAllData();
     </script>
