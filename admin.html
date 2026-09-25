@@ -187,7 +187,7 @@
 
         window.onload = function() {
             fetchAllData();
-            setInterval(fetchAllData, 8other = 8000);
+            setInterval(fetchAllData, 8000);
         }
 
         function switchTab(tab) {
@@ -236,7 +236,6 @@
                 return;
             }
 
-            // 按菜品ID合并统计总量
             let summaryMap = {};
             let dishMap = {};
             (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
@@ -351,7 +350,6 @@
             `).join('');
         }
 
-        // 菜品增删改弹窗逻辑
         function openAddDishModal() {
             document.getElementById('dishModalTitle').innerText = '添加新菜品';
             document.getElementById('editDishId').value = '';
@@ -449,7 +447,6 @@
                 return;
             }
 
-            // 合并所有订单中的菜品
             let summaryMap = {};
             orders.forEach(o => {
                 (o.items || []).forEach(item => {
@@ -489,7 +486,6 @@
 
         async function toggleSupermarketItem(dishId) {
             await fetchAllData();
-            // 遍历所有订单，把对应菜品的 checked 状态切换
             (cloudData.orders || []).forEach(o => {
                 (o.items || []).forEach(item => {
                     if (item.id === dishId) {
