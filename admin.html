@@ -37,19 +37,15 @@
     <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-4">
         
-        <!-- 顶部统计看板 -->
-        <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white p-3.5 rounded-2xl border border-amber-200/60 shadow-xs space-y-1">
-                <p class="text-[11px] text-gray-400">本周预估总花费</p>
-                <p class="text-lg font-extrabold text-amber-800">¥<span id="totalBudget">0</span></p>
-            </div>
-            <div class="bg-white p-3.5 rounded-2xl border border-amber-200/60 shadow-xs space-y-1">
+        <!-- 顶部统计看板 (已移除预估总花费，保留菜品总数与订单数统计) -->
+        <div class="grid grid-cols-1 gap-3">
+            <div class="bg-white p-3.5 rounded-2xl border border-amber-200/60 shadow-xs space-y-1 text-center">
                 <p class="text-[11px] text-gray-400">菜品总数 / 预定单数</p>
                 <p class="text-lg font-extrabold text-amber-900"><span id="totalDishesCount">0</span> 样 / <span id="totalOrdersCount">0</span> 单</p>
             </div>
         </div>
 
-        <!-- 选项卡切换 (已移除当天订单汇总) -->
+        <!-- 选项卡切换 -->
         <div class="flex bg-amber-100/60 p-1 rounded-xl text-xs font-bold overflow-x-auto no-scrollbar">
             <button onclick="switchTab('summary')" id="tab-summary" class="flex-1 py-2 px-2 rounded-lg bg-white text-amber-900 shadow-xs transition whitespace-nowrap">周末采购清单</button>
             <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-2 px-2 rounded-lg text-gray-600 transition whitespace-nowrap">库存管理</button>
@@ -77,7 +73,6 @@
                     <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-warehouse mr-1 text-amber-600"></i>现有原材料库存</h3>
                     <button onclick="openAddInventoryModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>添加库存</button>
                 </div>
-                <!-- 搜索框 -->
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search text-xs"></i></span>
                     <input type="text" id="inventorySearchInput" oninput="renderInventory()" placeholder="输入原材料名称搜索库存..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-xs outline-none">
@@ -108,7 +103,6 @@
                     <h3 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-utensils mr-1 text-amber-600"></i>可选菜单库与原材料</h3>
                     <button onclick="openAddDishModal()" class="text-amber-600 text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i>添加新菜</button>
                 </div>
-                <!-- 搜索框 -->
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search text-xs"></i></span>
                     <input type="text" id="dishSearchInput" oninput="renderDishesAdmin()" placeholder="输入菜品名称或配料关键字搜索..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 text-xs outline-none">
@@ -167,7 +161,6 @@
                 <span>买一样勾选一样，已扣除库存！</span>
                 <span id="supermarketProgress" class="font-bold">已买: 0 / 0</span>
             </div>
-            <!-- 超市搜索框 -->
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400"><i class="fa-solid fa-search text-xs"></i></span>
                 <input type="text" id="supermarketSearchInput" oninput="renderSupermarketList()" placeholder="在采购清单中快速搜索..." class="w-full bg-white border border-emerald-200 rounded-xl pl-8 pr-3 py-1.5 text-xs outline-none">
@@ -248,20 +241,14 @@
                     <label class="text-gray-500 block mb-1">菜品名称</label>
                     <input type="text" id="dishNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
                 </div>
-                <div class="flex space-x-2">
-                    <div class="flex-1">
-                        <label class="text-gray-500 block mb-1">分类</label>
-                        <select id="dishCategoryInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
-                            <option value="热菜">热菜</option>
-                            <option value="凉菜">凉菜</option>
-                            <option value="主食/汤品">主食/汤品</option>
-                            <option value="饮品/甜点">饮品/甜点</option>
-                        </select>
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-gray-500 block mb-1">价格 (¥)</label>
-                        <input type="number" id="dishPriceInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
-                    </div>
+                <div>
+                    <label class="text-gray-500 block mb-1">分类</label>
+                    <select id="dishCategoryInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                        <option value="热菜">热菜</option>
+                        <option value="凉菜">凉菜</option>
+                        <option value="主食/汤品">主食/汤品</option>
+                        <option value="饮品/甜点">饮品/甜点</option>
+                    </select>
                 </div>
                 <div>
                     <label class="text-gray-500 block mb-1">图片链接 (URL)</label>
@@ -277,7 +264,7 @@
                 </div>
                 <div>
                     <label class="text-emerald-800 font-bold block mb-1">可选配菜 / 附加选项 (可选)</label>
-                    <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:价格:原材料 (多项用逗号隔开)"></textarea>
+                    <textarea id="dishOptionsInput" rows="2" class="w-full bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2 outline-none text-xs" placeholder="格式：名称:原材料 (多项用逗号隔开)"></textarea>
                 </div>
             </div>
             <div class="flex space-x-2 pt-1">
@@ -341,12 +328,11 @@
         }
 
         window.onload = function() {
-            initDeviceDateSelection(); // 自动对齐设备当前日期
+            initDeviceDateSelection(); 
             fetchAllData();
             setInterval(fetchAllData, 8000);
         }
 
-        // 根据设备的真实日期，自动初始化下拉框选项
         function initDeviceDateSelection() {
             const daysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
             const todayIndex = new Date().getDay();
@@ -380,18 +366,13 @@
             if (currentTab === 'inventory') renderInventory();
             if (currentTab === 'orders') renderOrders();
             if (currentTab === 'dishes') renderDishesAdmin();
-            renderTodaySummary(); // 独立模块实时渲染
+            renderTodaySummary(); 
             if (!document.getElementById('supermarketModal').classList.contains('hidden')) {
                 renderSupermarketList();
             }
         }
 
         function renderStats() {
-            let totalBudget = 0;
-            (cloudData.orders || []).forEach(o => {
-                totalBudget += (o.totalPrice || 0);
-            });
-            document.getElementById('totalBudget').innerText = totalBudget;
             document.getElementById('totalDishesCount').innerText = (cloudData.dishes || []).length;
             document.getElementById('totalOrdersCount').innerText = (cloudData.orders || []).length;
         }
@@ -570,7 +551,6 @@
             }).join('');
         }
 
-        // ================= 当天订单汇总与清空订单逻辑 =================
         function renderTodaySummary() {
             const container = document.getElementById('todayDishesSummaryContainer');
             const selectedDay = document.getElementById('selectedDaySelect').value;
@@ -591,14 +571,14 @@
                 order.items.forEach(item => {
                     let key = item.id;
                     if (!dishCounts[key]) {
-                        dishCounts[key] = { name: item.name, count: 0, price: item.price };
+                        dishCounts[key] = { name: item.name, count: 0 };
                     }
                     dishCounts[key].count += item.count;
 
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
                         let times = item.count;
-                        let rawParts = dish.ingredients.split(/[,，;；]/); // 已修复逗号解析Bug
+                        let rawParts = dish.ingredients.split(/[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
@@ -718,7 +698,6 @@
             renderAll();
             alert(`【${selectedDay}】订单已成功清空，库存已完成扣除！现在可以接受新的点菜了✨`);
         }
-        // =======================================================================
 
         function renderInventory() {
             const container = document.getElementById('inventoryListContainer');
@@ -862,13 +841,8 @@
                                             <div>
                                                 <span class="font-bold">${i.name} x${i.count}</span>${i.selectedOptions && i.selectedOptions.length > 0 ? `<div class="text-[10px] text-emerald-700">配菜: ${i.selectedOptions.join(', ')}</div>` : ''}
                                             </div>
-                                            <span class="font-bold">¥${i.itemTotalPrice || (i.price * i.count)}</span>
                                         </div>
                                     `).join('')}
-                                </div>
-                                <div class="flex justify-between items-center pt-1 border-t border-gray-100 text-[10px]">
-                                    <span class="text-gray-400">单笔小计</span>
-                                    <span class="font-bold text-amber-900">¥${order.totalPrice}</span>
                                 </div>
                             </div>
                         `;
@@ -908,7 +882,7 @@
             }
 
             container.innerHTML = filteredDishes.map(dish => {
-                let optionsDesc = dish.options && dish.options.length > 0 ? dish.options.map(o => `${o.name}(+¥${o.price})`).join(', ') : '无';
+                let optionsDesc = dish.options && dish.options.length > 0 ? dish.options.map(o => o.name).join(', ') : '无';
                 return `
                     <div class="bg-white rounded-xl border p-2.5 flex items-center justify-between shadow-xs">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
@@ -918,7 +892,6 @@
                                     <h4 class="font-bold text-xs text-gray-800 truncate">${dish.name}</h4>
                                     <span class="text-[9px] bg-amber-50 text-amber-700 px-1 py-0.2 rounded">${dish.category || '热菜'}</span>
                                 </div>
-                                <p class="text-[10px] text-amber-600 font-bold">¥${dish.price}</p>
                                 <p class="text-[10px] text-gray-400 truncate">配料: ${dish.ingredients || '未填写'}</p>
                                 <p class="text-[10px] text-emerald-600 truncate">配菜选项: ${optionsDesc}</p>
                             </div>
@@ -937,7 +910,6 @@
             document.getElementById('editDishId').value = '';
             document.getElementById('dishNameInput').value = '';
             document.getElementById('dishCategoryInput').value = '热菜';
-            document.getElementById('dishPriceInput').value = '';
             document.getElementById('dishImageInput').value = '';
             document.getElementById('dishDescInput').value = '';
             document.getElementById('dishIngredientsInput').value = '';
@@ -952,14 +924,13 @@
             document.getElementById('editDishId').value = dish.id;
             document.getElementById('dishNameInput').value = dish.name;
             document.getElementById('dishCategoryInput').value = dish.category || '热菜';
-            document.getElementById('dishPriceInput').value = dish.price;
             document.getElementById('dishImageInput').value = dish.image;
             document.getElementById('dishDescInput').value = dish.desc || '';
             document.getElementById('dishIngredientsInput').value = dish.ingredients || '';
             
             let optionsText = '';
             if (dish.options && dish.options.length > 0) {
-                optionsText = dish.options.map(o => `${o.name}:${o.price}:${o.ingredients || ''}`).join(', ');
+                optionsText = dish.options.map(o => `${o.name}:${o.ingredients || ''}`).join(', ');
             }
             document.getElementById('dishOptionsInput').value = optionsText;
 
@@ -974,14 +945,13 @@
             let id = document.getElementById('editDishId').value;
             let name = document.getElementById('dishNameInput').value.trim();
             let category = document.getElementById('dishCategoryInput').value;
-            let price = parseFloat(document.getElementById('dishPriceInput').value);
             let image = document.getElementById('dishImageInput').value.trim();
             let desc = document.getElementById('dishDescInput').value.trim();
             let ingredients = document.getElementById('dishIngredientsInput').value.trim();
             let optionsStr = document.getElementById('dishOptionsInput').value.trim();
 
-            if (!name || isNaN(price)) {
-                alert('请填写完整的菜品名称和有效价格！');
+            if (!name) {
+                alert('请填写完整的菜品名称！');
                 return;
             }
 
@@ -992,11 +962,11 @@
                     p = p.trim();
                     if (!p) return;
                     let sub = p.split(':');
-                    if (sub.length >= 2) {
+                    if (sub.length >= 1) {
                         parsedOptions.push({
                             name: sub[0].trim(),
-                            price: parseFloat(sub[1]) || 0,
-                            ingredients: sub[2] ? sub[2].trim() : ''
+                            price: 0,
+                            ingredients: sub[1] ? sub[1].trim() : ''
                         });
                     }
                 });
@@ -1010,7 +980,7 @@
                 if (dish) {
                     dish.name = name;
                     dish.category = category;
-                    dish.price = price;
+                    dish.price = 0;
                     dish.image = image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c';
                     dish.desc = desc;
                     dish.ingredients = ingredients;
@@ -1021,7 +991,7 @@
                     id: Date.now(),
                     name: name,
                     category: category,
-                    price: price,
+                    price: 0,
                     image: image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c',
                     desc: desc,
                     ingredients: ingredients,
