@@ -69,14 +69,14 @@
             </div>
         </div>
 
-        <!-- 面板 2：全家点菜明细 -->
+        <!-- 面板 2：全家点菜明细（已按日期归类） -->
         <div id="panel-orders" class="space-y-3 hidden">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
-                    <span><i class="fa-solid fa-receipt mr-1 text-amber-600"></i>家庭成员预定记录</span>
+                    <span><i class="fa-solid fa-receipt mr-1 text-amber-600"></i>家庭成员预定记录（按天归类）</span>
                     <span class="text-[10px] text-gray-400">可在这里删除误点的订单</span>
                 </h3>
-                <div id="ordersListContainer" class="space-y-2.5 pt-1">
+                <div id="ordersListContainer" class="space-y-3 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">暂无点菜订单...</div>
                 </div>
             </div>
@@ -226,7 +226,6 @@
             document.getElementById('totalOrdersCount').innerText = (cloudData.orders || []).length;
         }
 
-        // 渲染采购总清单
         function renderSummary() {
             const container = document.getElementById('summaryListContainer');
             let orders = cloudData.orders || [];
@@ -237,9 +236,6 @@
             }
 
             let summaryMap = {};
-            let dishMap = {};
-            (cloudData.dishes || []).forEach(d => { dishMap[d.id] = d; });
-
             orders.forEach(o => {
                 (o.items || []).forEach(item => {
                     if (!summaryMap[item.id]) {
@@ -249,8 +245,7 @@
                             price: item.price,
                             totalCount: 0,
                             days: new Set(),
-                            users: new Set(),
-                            checked: item.checked || false
+                            users: new Set()
                         };
                     }
                     summaryMap[item.id].totalCount += item.count;
@@ -274,7 +269,7 @@
             `).join('');
         }
 
-        // 渲染全家点菜明细（支持删除）
+        // 🌟 核心升级：全家点菜明细按日期（周一到周日）归类展示
         function renderOrders() {
             const container = document.getElementById('ordersListContainer');
             let orders = cloudData.orders || [];
@@ -284,32 +279,63 @@
                 return;
             }
 
-            container.innerHTML = orders.map(order => `
-                <div class="bg-amber-50/50 border border-amber-200 p-3 rounded-xl space-y-1.5">
-                    <div class="flex justify-between items-center border-b border-amber-100 pb-1">
-                        <div class="flex items-center space-x-1.5">
-                            <span class="bg-amber-600 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">${order.user || '某位家人'}</span>
-                            <span class="font-bold text-xs text-amber-900">${order.targetDay || '周一'}预定</span>
-                        </div>
-                        <div class="space-x-1">
-                            <span class="text-[10px] px-2 py-0.5 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800'}">${order.status || '待采购'}</span>
-                            <button onclick="deleteAdminOrder(${order.id})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
-                        </div>
-                    </div>
-                    <div class="space-y-0.5 text-xs text-gray-700">
-                        ${(order.items || []).map(i => `
-                            <div class="flex justify-between">
-                                <span>${i.name} x${i.count}</span>
-                                <span class="font-bold">¥${i.price * i.count}</span>
+            const daysOrder = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
+            let groupedByDay = {};
+            daysOrder.forEach(d => { groupedByDay[d] = []; });
+
+            orders.forEach(o => {
+                let day = o.targetDay || '周一';
+                if (!groupedByDay[day]) groupedByDay[day] = [];
+                groupedByDay[day].push(o);
+            });
+
+            let html = '';
+            daysOrder.forEach(day => {
+                let dayOrders = groupedByDay[day];
+                if (dayOrders.length > 0) {
+                    html += `
+                        <div class="bg-amber-50/60 border border-amber-200 p-3 rounded-2xl space-y-2">
+                            <div class="flex justify-between items-center border-b border-amber-200 pb-1.5">
+                                <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i>${day} 点菜明细</span>
+                                <span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">${dayOrders.length} 笔</span>
                             </div>
-                        `).join('')}
-                    </div>
-                    <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
-                        <span class="text-gray-400">时间: ${order.time || ''}</span>
-                        <span class="font-bold text-amber-900">总计: ¥${order.totalPrice}</span>
-                    </div>
-                </div>
-            `).join('');
+                            <div class="space-y-2 pt-0.5">
+                    `;
+
+                    dayOrders.forEach(order => {
+                        html += `
+                            <div class="bg-white p-2.5 rounded-xl border border-amber-100 space-y-1.5 shadow-xs">
+                                <div class="flex justify-between items-center text-[11px] border-b border-gray-100 pb-1">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="bg-amber-600 text-white text-[10px] px-1.5 py-0.2 rounded font-bold">${order.user || '某位家人'}</span>
+                                        <span class="text-[10px] text-gray-400">${order.time || ''}</span>
+                                    </div>
+                                    <div class="space-x-1">
+                                        <span class="text-[10px] px-2 py-0.2 rounded-full font-medium ${order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800'}">${order.status || '待采购'}</span>
+                                        <button onclick="deleteAdminOrder(${order.id})" class="text-gray-400 hover:text-red-500 text-xs px-1"><i class="fa-solid fa-trash"></i></button>
+                                    </div>
+                                </div>
+                                <div class="space-y-0.5 text-xs text-gray-700">
+                                    ${(order.items || []).map(i => `
+                                        <div class="flex justify-between">
+                                            <span>${i.name} x${i.count}</span>
+                                            <span class="font-bold">¥${i.price * i.count}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <div class="flex justify-between items-center pt-1 border-t border-gray-100 text-[10px]">
+                                    <span class="text-gray-400">单笔小计</span>
+                                    <span class="font-bold text-amber-900">¥${order.totalPrice}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div></div>`;
+                }
+            });
+
+            container.innerHTML = html;
         }
 
         async function deleteAdminOrder(orderId) {
@@ -320,7 +346,6 @@
             renderAll();
         }
 
-        // 渲染菜品库管理
         function renderDishesAdmin() {
             const container = document.getElementById('dishesListContainer');
             let dishes = cloudData.dishes || [];
@@ -427,7 +452,6 @@
             renderAll();
         }
 
-        // 🌟 超市采购勾选模式
         function openSupermarketMode() {
             document.getElementById('supermarketModal').classList.remove('hidden');
             renderSupermarketList();
