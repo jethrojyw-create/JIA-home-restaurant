@@ -2,7 +2,6 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 关键：加入 viewport-fit=cover 以适配 iPhone 顶部的刘海/灵动岛区域 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>家庭全周大采购 - 点菜端</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -12,53 +11,53 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[240px]">
+<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[260px]">
 
-    <!-- 顶部导航 (固定在最上方，并自动适配 iPhone 顶部安全区) -->
-    <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-3 flex justify-between items-center w-full max-w-lg mx-auto" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
-        <div class="flex items-center space-x-2">
-            <span class="text-xl">🍲</span>
+    <!-- 顶部导航 (精简高度，完美适配 iPhone 安全区) -->
+    <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-1.5 flex justify-between items-center w-full max-w-lg mx-auto" style="padding-top: calc(0.35rem + env(safe-area-inset-top, 0px));">
+        <div class="flex items-center space-x-1.5">
+            <span class="text-lg">🍲</span>
             <div>
-                <h1 class="font-bold text-sm text-amber-900 leading-tight" data-i18n="app_title">家庭全周大采购</h1>
-                <p class="text-[10px] text-gray-400" id="currentLoginUserDisplay">点菜人: 请设置</p>
+                <h1 class="font-bold text-xs text-amber-900 leading-tight" data-i18n="app_title">家庭全周大采购</h1>
+                <p class="text-[9px] text-gray-400" id="currentLoginUserDisplay">点菜人: 请设置</p>
             </div>
         </div>
-        <div class="flex items-center space-x-1.5">
-            <button onclick="toggleLang()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-2.5 py-1.5 rounded-lg transition" id="langBtn">EN</button>
-            <button onclick="openFamilyOrdersModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-bold px-2 py-1.5 rounded-lg transition flex items-center space-x-1 border border-amber-200">
+        <div class="flex items-center space-x-1">
+            <button onclick="toggleLang()" class="bg-gray-100 hover:bg-gray-200 text-gray-700 text-[11px] font-bold px-2 py-1 rounded-lg transition" id="langBtn">EN</button>
+            <button onclick="openFamilyOrdersModal()" class="bg-amber-50 hover:bg-amber-100 text-amber-900 text-[11px] font-bold px-1.5 py-1 rounded-lg transition flex items-center space-x-0.5 border border-amber-200">
                 <i class="fa-solid fa-users text-amber-600"></i>
                 <span data-i18n="nav_family_menu">全家菜单</span>
             </button>
-            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-2 py-1.5 rounded-lg transition flex items-center space-x-1">
+            <button onclick="openMyOrdersModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-[11px] font-bold px-1.5 py-1 rounded-lg transition flex items-center space-x-0.5">
                 <i class="fa-solid fa-receipt"></i>
                 <span data-i18n="nav_my_orders">我的</span>
             </button>
-            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-medium px-2 py-1.5 rounded-lg transition flex items-center space-x-1">
+            <button onclick="openUserModal()" class="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-medium px-1.5 py-1 rounded-lg transition flex items-center space-x-0.5">
                 <i class="fa-solid fa-user-pen"></i>
                 <span id="switchUserBtnText">切换</span>
             </button>
         </div>
     </header>
 
-    <!-- 🔍 搜索栏、星期选择、分类导航：固定在顶部导航下方，动态计算安全区高度 -->
-    <div class="fixed left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs" style="top: calc(57px + env(safe-area-inset-top, 0px));">
-        <div class="w-full max-w-lg mx-auto space-y-2">
+    <!-- 🔍 搜索栏、星期选择、分类导航：安全下移，绝不被遮挡 -->
+    <div class="fixed left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs" style="top: calc(52px + env(safe-area-inset-top, 0px));">
+        <div class="w-full max-w-lg mx-auto space-y-1.5">
             <!-- 搜索栏 -->
             <div class="relative w-full">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                 </span>
-                <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" placeholder="搜索想吃的菜品..." class="w-full bg-white border border-amber-200/80 rounded-2xl pl-9 pr-8 py-2 text-xs outline-none focus:border-amber-600 shadow-xs transition placeholder-gray-400 font-medium">
+                <input type="text" id="searchInput" oninput="handleSearchInput(this.value)" placeholder="搜索想吃的菜品..." class="w-full bg-white border border-amber-200/80 rounded-2xl pl-9 pr-8 py-1.5 text-xs outline-none focus:border-amber-600 shadow-xs transition placeholder-gray-400 font-medium">
                 <button onclick="clearSearch()" id="clearSearchBtn" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 hidden text-xs">
                     <i class="fa-solid fa-circle-xmark"></i>
                 </button>
             </div>
 
             <!-- 星期选择横幅 -->
-            <div class="bg-white rounded-2xl p-2.5 border border-amber-200/60 shadow-xs space-y-1.5">
+            <div class="bg-white rounded-2xl p-2 border border-amber-200/60 shadow-xs space-y-1">
                 <div class="flex justify-between items-center">
                     <h2 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i><span data-i18n="select_day_title">选择预定哪一天的饭菜</span></h2>
-                    <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold">周一</span>
+                    <span id="selectedDayBadge" class="text-[11px] bg-amber-600 text-white px-2 py-0.2 rounded-full font-bold">周一</span>
                 </div>
                 <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="dayTabs">
                     <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" data-day="周一" data-i18n-day="monday">周一</button>
