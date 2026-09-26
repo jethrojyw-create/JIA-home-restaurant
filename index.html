@@ -107,7 +107,7 @@
         </div>
     </div>
 
-    <!-- 🍳 配菜选择弹窗 (已将 z-50 提升至 z-[70]，防止被其他弹窗遮挡) -->
+    <!-- 🍳 配菜选择弹窗 -->
     <div id="optionsModal" class="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3">
             <div class="flex justify-between items-center border-b pb-2">
@@ -175,7 +175,7 @@
         let cart = {};
         let activeDishForOptions = null;
         let activeEditingOrderContext = null;
-        let activeEditingCartKey = null; // 用于记录当前正在修改的购物车项 Key
+        let activeEditingCartKey = null;
 
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
@@ -459,6 +459,28 @@
             }).join('');
         }
 
+        // 统一处理“不加配菜”与“具体配菜”的互斥联动勾选逻辑
+        function handleOptionCheckboxChange(changedCheckbox) {
+            let checkboxes = document.querySelectorAll('input[name="dishOption"]');
+            let isNoneOption = (changedCheckbox.value === '不加配菜' || changedCheckbox.value === '无' || changedCheckbox.value === '不加');
+
+            if (isNoneOption && changedCheckbox.checked) {
+                // 如果勾选了“不加配菜”，则取消勾选其他所有配菜
+                checkboxes.forEach(cb => {
+                    let val = cb.value;
+                    let isOtherNone = (val === '不加配菜' || val === '无' || val === '不加');
+                    if (!isOtherNone) cb.checked = false;
+                });
+            } else if (!isNoneOption && changedCheckbox.checked) {
+                // 如果勾选了任意具体配菜，则取消勾选“不加配菜”
+                checkboxes.forEach(cb => {
+                    let val = cb.value;
+                    let isNone = (val === '不加配菜' || val === '无' || val === '不加');
+                    if (isNone) cb.checked = false;
+                });
+            }
+        }
+
         function openOptionsModal(dishId) {
             let dish = (cloudData.dishes || []).find(d => d.id === dishId);
             if (!dish) return;
@@ -478,7 +500,7 @@
                     return `
                         <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                             <div class="flex items-center space-x-2">
-                                <input type="checkbox" name="dishOption" value="${optName}" class="w-4 h-4 text-amber-600 rounded">
+                                <input type="checkbox" name="dishOption" value="${optName}" onchange="handleOptionCheckboxChange(this)" class="w-4 h-4 text-amber-600 rounded">
                                 <span class="font-bold text-gray-800">${optName}</span>
                             </div>
                         </label>
@@ -490,7 +512,6 @@
             document.getElementById('optionsModal').classList.remove('hidden');
         }
 
-        // 打开购物车中特定菜品的配菜修改弹窗
         function openEditCartOptionsModal(cartKey) {
             let item = cart[cartKey];
             if (!item) return;
@@ -510,7 +531,7 @@
                 return `
                     <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                         <div class="flex items-center space-x-2">
-                            <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} class="w-4 h-4 text-amber-600 rounded">
+                            <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} onchange="handleOptionCheckboxChange(this)" class="w-4 h-4 text-amber-600 rounded">
                             <span class="font-bold text-gray-800">${optName}</span>
                         </div>
                     </label>
@@ -521,7 +542,6 @@
             document.getElementById('optionsModal').classList.remove('hidden');
         }
 
-        // 确认修改购物车中的配菜
         function confirmEditCartOptions() {
             if (!activeEditingCartKey || !cart[activeEditingCartKey]) return;
             let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
@@ -532,7 +552,6 @@
             let oldItem = cart[activeEditingCartKey];
             let newKey = `${oldItem.dish.id}_${selectedOptions.join('_')}`;
 
-            // 重新在购物车中生成对应的 Key 并更新配菜
             if (newKey !== activeEditingCartKey) {
                 delete cart[activeEditingCartKey];
             }
@@ -546,7 +565,6 @@
             updateCartBar();
         }
 
-        // 打开预定单中特定菜品的配菜修改弹窗
         function openEditOrderOptionsModal(orderId, itemIndex) {
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (!order || !order.items[itemIndex]) return;
@@ -567,7 +585,7 @@
                 return `
                     <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                         <div class="flex items-center space-x-2">
-                            <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} class="w-4 h-4 text-amber-600 rounded">
+                            <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} onchange="handleOptionCheckboxChange(this)" class="w-4 h-4 text-amber-600 rounded">
                             <span class="font-bold text-gray-800">${optName}</span>
                         </div>
                     </label>
@@ -578,7 +596,6 @@
             document.getElementById('optionsModal').classList.remove('hidden');
         }
 
-        // 确认修改预定单中的配菜
         async function confirmEditOrderOptions() {
             if (!activeEditingOrderContext) return;
             let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
