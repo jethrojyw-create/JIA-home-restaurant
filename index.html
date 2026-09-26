@@ -11,10 +11,10 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-gray-800 pb-36">
+<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[190px]">
 
-    <!-- 顶部导航 -->
-    <header class="bg-white shadow-xs sticky top-0 z-40 px-3 py-3 flex justify-between items-center w-full">
+    <!-- 顶部导航 (固定在最上方) -->
+    <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-3 flex justify-between items-center w-full max-w-lg mx-auto">
         <div class="flex items-center space-x-2">
             <span class="text-xl">🍲</span>
             <div>
@@ -39,8 +39,8 @@
         </div>
     </header>
 
-    <!-- 🔍 搜索栏、星期选择、分类导航：吸顶容器 -->
-    <div class="sticky top-[53px] z-30 bg-amber-50/95 backdrop-blur px-3 py-2 space-y-2 border-b border-amber-200/40 shadow-xs">
+    <!-- 🔍 搜索栏、星期选择、分类导航：改为绝对固定 (fixed) 在 Header 下方，永远置顶不随页面滚动隐藏 -->
+    <div class="fixed top-[57px] left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs">
         <div class="w-full max-w-lg mx-auto space-y-2">
             <!-- 搜索栏 -->
             <div class="relative w-full">
@@ -54,30 +54,30 @@
             </div>
 
             <!-- 星期选择横幅 -->
-            <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
+            <div class="bg-white rounded-2xl p-2.5 border border-amber-200/60 shadow-xs space-y-1.5">
                 <div class="flex justify-between items-center">
                     <h2 class="font-bold text-xs text-amber-900"><i class="fa-solid fa-calendar-day mr-1 text-amber-600"></i><span data-i18n="select_day_title">选择预定哪一天的饭菜</span></h2>
                     <span id="selectedDayBadge" class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full font-bold">周一</span>
                 </div>
                 <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="dayTabs">
-                    <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" data-day="周一" data-i18n-day="monday">周一</button>
-                    <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周二" data-i18n-day="tuesday">周二</button>
-                    <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周三" data-i18n-day="wednesday">周三</button>
-                    <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周四" data-i18n-day="thursday">周四</button>
-                    <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周五" data-i18n-day="friday">周五</button>
-                    <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周六" data-i18n-day="saturday">周六</button>
-                    <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周日" data-i18n-day="sunday">周日</button>
+                    <button onclick="selectDay('周一')" id="day-周一" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" data-day="周一" data-i18n-day="monday">周一</button>
+                    <button onclick="selectDay('周二')" id="day-周二" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周二" data-i18n-day="tuesday">周二</button>
+                    <button onclick="selectDay('周三')" id="day-周三" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周三" data-i18n-day="wednesday">周三</button>
+                    <button onclick="selectDay('周四')" id="day-周四" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周四" data-i18n-day="thursday">周四</button>
+                    <button onclick="selectDay('周五')" id="day-周五" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周五" data-i18n-day="friday">周五</button>
+                    <button onclick="selectDay('周六')" id="day-周六" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周六" data-i18n-day="saturday">周六</button>
+                    <button onclick="selectDay('周日')" id="day-周日" class="day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-day="周日" data-i18n-day="sunday">周日</button>
                 </div>
             </div>
 
             <!-- 菜单分类导航 -->
             <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs">
-                <button onclick="filterCategory('全部')" id="cat-all" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" data-i18n="cat_all">全部菜品</button>
-                <button onclick="filterCategory('热菜')" id="cat-hot" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_hot">热菜</button>
-                <button onclick="filterCategory('凉菜')" id="cat-cold" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_cold">凉菜</button>
-                <button onclick="filterCategory('主食/汤品')" id="cat-soup" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_soup">主食/汤品</button>
-                <button onclick="filterCategory('饮品/甜点')" id="cat-drink" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_drink">饮品/甜点</button>
-                <button onclick="filterCategory('点心/面包')" id="cat-bakery" class="cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_bakery">点心/面包</button>
+                <button onclick="filterCategory('全部')" id="cat-all" class="cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" data-i18n="cat_all">全部菜品</button>
+                <button onclick="filterCategory('热菜')" id="cat-hot" class="cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_hot">热菜</button>
+                <button onclick="filterCategory('凉菜')" id="cat-cold" class="cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_cold">凉菜</button>
+                <button onclick="filterCategory('主食/汤品')" id="cat-soup" class="cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_soup">主食/汤品</button>
+                <button onclick="filterCategory('饮品/甜点')" id="cat-drink" class="cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_drink">饮品/甜点</button>
+                <button onclick="filterCategory('点心/面包')" id="cat-bakery" class="cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition" data-i18n="cat_bakery">点心/面包</button>
             </div>
         </div>
     </div>
@@ -371,7 +371,7 @@
             selectedDay = day;
             document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(day));
             document.querySelectorAll('.day-btn').forEach(btn => {
-                btn.className = btn.getAttribute('data-day') === day ? "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" : "day-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+                btn.className = btn.getAttribute('data-day') === day ? "day-btn px-3 py-1 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" : "day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
             });
             renderDishes();
         }
@@ -380,7 +380,7 @@
             selectedCategory = cat;
             const catMap = { '全部': 'cat-all', '热菜': 'cat-hot', '凉菜': 'cat-cold', '主食/汤品': 'cat-soup', '饮品/甜点': 'cat-drink', '点心/面包': 'cat-bakery' };
             document.querySelectorAll('.cat-btn').forEach(btn => {
-                btn.className = btn.id === catMap[cat] ? "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" : "cat-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
+                btn.className = btn.id === catMap[cat] ? "cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-amber-900 text-white whitespace-nowrap transition shadow-xs" : "cat-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
             });
             renderDishes();
         }
@@ -459,20 +459,17 @@
             }).join('');
         }
 
-        // 统一处理“不加配菜”与“具体配菜”的互斥联动勾选逻辑
         function handleOptionCheckboxChange(changedCheckbox) {
             let checkboxes = document.querySelectorAll('input[name="dishOption"]');
             let isNoneOption = (changedCheckbox.value === '不加配菜' || changedCheckbox.value === '无' || changedCheckbox.value === '不加');
 
             if (isNoneOption && changedCheckbox.checked) {
-                // 如果勾选了“不加配菜”，则取消勾选其他所有配菜
                 checkboxes.forEach(cb => {
                     let val = cb.value;
                     let isOtherNone = (val === '不加配菜' || val === '无' || val === '不加');
                     if (!isOtherNone) cb.checked = false;
                 });
             } else if (!isNoneOption && changedCheckbox.checked) {
-                // 如果勾选了任意具体配菜，则取消勾选“不加配菜”
                 checkboxes.forEach(cb => {
                     let val = cb.value;
                     let isNone = (val === '不加配菜' || val === '无' || val === '不加');
