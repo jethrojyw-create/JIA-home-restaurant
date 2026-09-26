@@ -11,7 +11,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[230px]">
+<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[160px]">
 
     <!-- 顶部导航 (固定在最上方，完美适配 iPhone 安全区) -->
     <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-1.5 flex justify-between items-center w-full max-w-lg mx-auto" style="padding-top: calc(0.35rem + env(safe-area-inset-top, 0px));">
@@ -82,10 +82,10 @@
         </div>
     </div>
 
-    <!-- 主体内容区（去掉了上方的多余间距） -->
-    <main class="w-full max-w-lg mx-auto p-3 space-y-2.5">
+    <!-- 主体内容区（已减小顶部内边距，消除与搜索栏之间的空白） -->
+    <main class="w-full max-w-lg mx-auto p-3 space-y-2">
         <!-- 菜品列表容器 -->
-        <div id="dishListContainer" class="grid grid-cols-1 gap-2.5">
+        <div id="dishListContainer" class="grid grid-cols-1 gap-2">
             <div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border" data-i18n="loading_dishes">正在加载云端菜单库...</div>
         </div>
     </main>
