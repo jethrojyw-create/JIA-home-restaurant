@@ -107,8 +107,8 @@
         </div>
     </div>
 
-    <!-- 🍳 配菜选择弹窗 -->
-    <div id="optionsModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden p-3">
+    <!-- 🍳 配菜选择弹窗 (已将 z-50 提升至 z-[70]，防止被其他弹窗遮挡) -->
+    <div id="optionsModal" class="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-sm text-amber-900" id="optionsDishName">选择配菜与口味偏好</h3>
@@ -174,7 +174,8 @@
         let searchKeyword = '';
         let cart = {};
         let activeDishForOptions = null;
-        let activeEditingOrderContext = null; // 用于记录当前正在直接修改的订单项
+        let activeEditingOrderContext = null;
+        let activeEditingCartKey = null; // 用于记录当前正在修改的购物车项 Key
 
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
@@ -462,7 +463,8 @@
             let dish = (cloudData.dishes || []).find(d => d.id === dishId);
             if (!dish) return;
             activeDishForOptions = dish;
-            activeEditingOrderContext = null; // 清除直接编辑状态
+            activeEditingOrderContext = null;
+            activeEditingCartKey = null;
 
             document.getElementById('optionsDishName').innerText = `选择 ${translateDishName(dish.name)} 的配菜`;
             let container = document.getElementById('optionsListContainer');
@@ -471,7 +473,7 @@
             if (options.length === 0) {
                 container.innerHTML = `<div class="text-center py-4 text-gray-400 text-xs">该菜品暂无可选配菜</div>`;
             } else {
-                container.innerHTML = options.map((opt, idx) => {
+                container.innerHTML = options.map(opt => {
                     let optName = typeof opt === 'object' ? opt.name : opt;
                     return `
                         <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
@@ -488,7 +490,63 @@
             document.getElementById('optionsModal').classList.remove('hidden');
         }
 
-        // 打开预定单中特定菜品的直接配菜修改弹窗
+        // 打开购物车中特定菜品的配菜修改弹窗
+        function openEditCartOptionsModal(cartKey) {
+            let item = cart[cartKey];
+            if (!item) return;
+            let dish = item.dish;
+            let options = dish.options || dish.subOptions || [];
+            if (options.length === 0) return;
+
+            activeEditingCartKey = cartKey;
+            document.getElementById('optionsDishName').innerText = `修改 ${translateDishName(dish.name)} 的配菜`;
+
+            let container = document.getElementById('optionsListContainer');
+            let currentSelected = item.selectedOptions || [];
+
+            container.innerHTML = options.map(opt => {
+                let optName = typeof opt === 'object' ? opt.name : opt;
+                let isChecked = currentSelected.includes(optName) ? 'checked' : '';
+                return `
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} class="w-4 h-4 text-amber-600 rounded">
+                            <span class="font-bold text-gray-800">${optName}</span>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            document.getElementById('optionsConfirmBtn').setAttribute('onclick', 'confirmEditCartOptions()');
+            document.getElementById('optionsModal').classList.remove('hidden');
+        }
+
+        // 确认修改购物车中的配菜
+        function confirmEditCartOptions() {
+            if (!activeEditingCartKey || !cart[activeEditingCartKey]) return;
+            let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
+            let selectedOptions = [];
+            checkboxes.forEach(cb => selectedOptions.push(cb.value));
+            selectedOptions.sort();
+
+            let oldItem = cart[activeEditingCartKey];
+            let newKey = `${oldItem.dish.id}_${selectedOptions.join('_')}`;
+
+            // 重新在购物车中生成对应的 Key 并更新配菜
+            if (newKey !== activeEditingCartKey) {
+                delete cart[activeEditingCartKey];
+            }
+            cart[newKey] = {
+                dish: oldItem.dish,
+                count: 1,
+                selectedOptions: selectedOptions
+            };
+
+            closeOptionsModal();
+            updateCartBar();
+        }
+
+        // 打开预定单中特定菜品的配菜修改弹窗
         function openEditOrderOptionsModal(orderId, itemIndex) {
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (!order || !order.items[itemIndex]) return;
@@ -520,7 +578,7 @@
             document.getElementById('optionsModal').classList.remove('hidden');
         }
 
-        // 确认直接修改预定单中的配菜
+        // 确认修改预定单中的配菜
         async function confirmEditOrderOptions() {
             if (!activeEditingOrderContext) return;
             let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
@@ -546,6 +604,7 @@
             document.getElementById('optionsModal').classList.add('hidden');
             activeDishForOptions = null;
             activeEditingOrderContext = null;
+            activeEditingCartKey = null;
         }
 
         function confirmAddWithOptions() {
@@ -602,11 +661,15 @@
                 totalCount += item.count;
 
                 let subText = item.selectedOptions.length > 0 ? ` (${item.selectedOptions.join(', ')})` : '';
+                let dish = item.dish;
+                let hasOptions = dish && dish.options && dish.options.length > 0;
+                let editBtnHtml = hasOptions ? `<button onclick="openEditCartOptionsModal('${cartKey}')" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> 修改</button>` : '';
+
                 previewHtml += `
-                    <div class="flex justify-between items-center truncate py-0.5 border-b border-gray-100">
-                        <span class="truncate">${translateDishName(item.dish.name)}${subText}</span>
+                    <div class="flex justify-between items-center truncate py-1 border-b border-gray-100">
+                        <span class="truncate">${translateDishName(item.dish.name)}${subText} x1</span>
                         <div class="space-x-2 shrink-0 flex items-center">
-                            <span class="font-bold text-amber-700">x1</span>
+                            ${editBtnHtml}
                             <button onclick="removeCartItem('${cartKey}')" class="text-red-500 hover:text-red-700 text-[10px] font-bold"><i class="fa-solid fa-trash"></i> 删除</button>
                         </div>
                     </div>`;
@@ -738,7 +801,6 @@
                                 let opts = i.selectedOptions ? i.selectedOptions.join(', ') : i.subOption;
                                 let subText = opts ? ` (${opts})` : '';
 
-                                // 判断该菜品是否有配菜选项
                                 let dish = (cloudData.dishes || []).find(d => d.id === i.id);
                                 let hasOptions = dish && dish.options && dish.options.length > 0;
                                 let editBtnHtml = hasOptions ? `<button onclick="openEditOrderOptionsModal(${order.id},${index})" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> 修改</button>` : '';
