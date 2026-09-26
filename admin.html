@@ -36,8 +36,8 @@
 
     <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-4">
-        
-        <!-- 顶部统计看板 (已移除预估总花费，保留菜品总数与订单数统计) -->
+
+        <!-- 顶部统计看板 -->
         <div class="grid grid-cols-1 gap-3">
             <div class="bg-white p-3.5 rounded-2xl border border-amber-200/60 shadow-xs space-y-1 text-center">
                 <p class="text-[11px] text-gray-400">菜品总数 / 预定单数</p>
@@ -113,7 +113,7 @@
             </div>
         </div>
 
-        <!-- 📌 独立固定在页面最下方的：当天订单汇总与一键清空模块 -->
+        <!-- 当天订单汇总与一键清空模块 -->
         <div class="bg-white rounded-2xl p-3.5 border-2 border-amber-300 shadow-md space-y-3 mt-6">
             <div class="flex justify-between items-center">
                 <h3 class="font-bold text-xs text-amber-900 flex items-center">
@@ -130,21 +130,17 @@
                 </select>
             </div>
 
-            <!-- 当天菜品汇总容器 -->
             <div id="todayDishesSummaryContainer" class="space-y-2 pt-1">
                 <div class="text-center py-6 text-gray-400 text-xs">暂无当天菜品需求...</div>
             </div>
 
-            <!-- 一键结算并清空当天订单按钮 -->
             <div class="pt-2">
                 <button onclick="settleAndClearTodayOrders()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center space-x-1.5">
                     <i class="fa-solid fa-trash-can-arrow-up"></i>
                     <span>一键扣除库存并清空当天订单</span>
                 </button>
-                <p class="text-[10px] text-gray-400 text-center mt-1.5">点击后将扣除对应库存，并**彻底清空**当天所有订单以接受新点菜</p>
             </div>
         </div>
-
     </main>
 
     <!-- 超市采购勾选大屏模式弹窗 -->
@@ -329,7 +325,7 @@
         }
 
         window.onload = function() {
-            initDeviceDateSelection(); 
+            initDeviceDateSelection();
             fetchAllData();
             setInterval(fetchAllData, 8000);
         }
@@ -338,7 +334,7 @@
             const daysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
             const todayIndex = new Date().getDay();
             const todayStr = daysMap[todayIndex];
-            
+
             let selectElem = document.getElementById('selectedDaySelect');
             if (selectElem) {
                 selectElem.value = todayStr;
@@ -367,7 +363,7 @@
             if (currentTab === 'inventory') renderInventory();
             if (currentTab === 'orders') renderOrders();
             if (currentTab === 'dishes') renderDishesAdmin();
-            renderTodaySummary(); 
+            renderTodaySummary();
             if (!document.getElementById('supermarketModal').classList.contains('hidden')) {
                 renderSupermarketList();
             }
@@ -463,7 +459,7 @@
                 order.items.forEach(orderItem => {
                     let dish = dishMap[orderItem.id];
                     if (dish) {
-                        let times = orderItem.count;
+                        let times = orderItem.count || 1;
                         if (dish.ingredients) addIngredientsToSummary(dish.ingredients, times);
                         if (orderItem.selectedOptions && orderItem.selectedOptions.length > 0 && dish.options) {
                             orderItem.selectedOptions.forEach(optName => {
@@ -574,11 +570,11 @@
                     if (!dishCounts[key]) {
                         dishCounts[key] = { name: item.name, count: 0 };
                     }
-                    dishCounts[key].count += item.count;
+                    dishCounts[key].count += (item.count || 1);
 
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
-                        let times = item.count;
+                        let times = item.count || 1;
                         let rawParts = dish.ingredients.split(/[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
@@ -613,25 +609,6 @@
             }
             html += `</div>`;
 
-            html += `<div class="text-[11px] font-bold text-gray-500 border-b pt-2 pb-1">🥩 预计消耗原材料明细：</div>`;
-            html += `<div class="grid grid-cols-1 gap-1.5">`;
-            let hasIng = false;
-            for (let k in ingredientSummary) {
-                hasIng = true;
-                let ing = ingredientSummary[k];
-                let valStr = Number.isInteger(ing.total) ? ing.total : ing.total.toFixed(1);
-                html += `
-                    <div class="bg-gray-50 border p-2 rounded-xl flex justify-between items-center text-xs">
-                        <span class="text-gray-700">${ing.name}</span>
-                        <span class="font-bold text-emerald-700">${valStr} ${ing.unit || '份'}</span>
-                    </div>
-                `;
-            }
-            if (!hasIng) {
-                html += `<div class="text-gray-400 text-xs py-1">暂无解析出相关原材料配方。</div>`;
-            }
-            html += `</div></div>`;
-
             container.innerHTML = html;
         }
 
@@ -657,7 +634,7 @@
                 order.items.forEach(item => {
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
-                        let times = item.count;
+                        let times = item.count || 1;
                         let rawParts = dish.ingredients.split(/[,，;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
@@ -697,14 +674,14 @@
             updateOrdersStatusAutomatically();
             await saveAllData();
             renderAll();
-            alert(`【${selectedDay}】订单已成功清空，库存已完成扣除！现在可以接受新的点菜了✨`);
+            alert(`【${selectedDay}】订单已成功清空，库存已完成扣除！`);
         }
 
         function renderInventory() {
             const container = document.getElementById('inventoryListContainer');
             let inventory = cloudData.inventory || {};
             let query = (document.getElementById('inventorySearchInput').value || '').trim().toLowerCase();
-            
+
             let keys = Object.keys(inventory).filter(key => {
                 let item = inventory[key];
                 return !query || item.name.toLowerCase().includes(query);
@@ -840,7 +817,7 @@
                                     ${(order.items || []).map(i => `
                                         <div class="flex justify-between items-start">
                                             <div>
-                                                <span class="font-bold">${i.name} x${i.count}</span>${i.selectedOptions && i.selectedOptions.length > 0 ? `<div class="text-[10px] text-emerald-700">配菜: ${i.selectedOptions.join(', ')}</div>` : ''}
+                                                <span class="font-bold">${i.name} x1</span>${i.selectedOptions && i.selectedOptions.length > 0 ? `<div class="text-[10px] text-emerald-700">配菜: ${i.selectedOptions.join(', ')}</div>` : ''}
                                             </div>
                                         </div>
                                     `).join('')}
@@ -928,7 +905,7 @@
             document.getElementById('dishImageInput').value = dish.image;
             document.getElementById('dishDescInput').value = dish.desc || '';
             document.getElementById('dishIngredientsInput').value = dish.ingredients || '';
-            
+
             let optionsText = '';
             if (dish.options && dish.options.length > 0) {
                 optionsText = dish.options.map(o => `${o.name}:${o.ingredients || ''}`).join(', ');
@@ -1059,10 +1036,6 @@
                                 ${stockInfo}
                             </div>
                         </div>
-                        <div class="flex items-center space-x-1 shrink-0 ml-2">
-                            <button onclick="openEditManualItem('${item.key}', '${item.name}', ${item.total}, '${item.unit || ''}', ${item.isManual ? 'true' : 'false'})" class="bg-amber-50 text-amber-800 px-2 py-1 rounded text-xs" title="修改"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteSupermarketItem('${item.key}', ${item.isManual ? 'true' : 'false'})" class="bg-red-50 text-red-600 px-2 py-1 rounded text-xs" title="删除"><i class="fa-solid fa-trash"></i></button>
-                        </div>
                     </div>
                 `;
             }).join('');
@@ -1071,7 +1044,7 @@
         async function toggleSupermarketItem(key) {
             if (!cloudData.checkedIngredients) cloudData.checkedIngredients = {};
             cloudData.checkedIngredients[key] = !cloudData.checkedIngredients[key];
-            
+
             updateOrdersStatusAutomatically();
             renderSupermarketList();
             await saveAllData();
@@ -1084,16 +1057,6 @@
             document.getElementById('manualNameInput').value = '';
             document.getElementById('manualTotalInput').value = '';
             document.getElementById('manualUnitInput').value = '';
-            document.getElementById('manualItemModal').classList.remove('hidden');
-        }
-
-        function openEditManualItem(key, name = '', total = '', unit = '', isManual = false) {
-            document.getElementById('manualModalTitle').innerText = '修改采购项目';
-            document.getElementById('editManualKey').value = key;
-            document.getElementById('editItemType').value = isManual ? 'manual' : 'auto';
-            document.getElementById('manualNameInput').value = name;
-            document.getElementById('manualTotalInput').value = total;
-            document.getElementById('manualUnitInput').value = unit;
             document.getElementById('manualItemModal').classList.remove('hidden');
         }
 
@@ -1126,38 +1089,11 @@
                     let newKey = 'manual_' + Date.now();
                     cloudData.manualIngredients.push({ key: newKey, name: name, total: total, unit: unit });
                 }
-            } else {
-                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
-                cloudData.ingredientOverrides[key] = { name: name, unit: unit, total: total, deleted: false };
             }
 
             updateOrdersStatusAutomatically();
             await saveAllData();
             closeManualModal();
-            renderSupermarketList();
-            renderSummaryIngredients();
-        }
-
-        async function deleteSupermarketItem(key, isManual = false) {
-            if (!confirm('确定要从采购清单中删除这一项吗？')) return;
-            await fetchAllData();
-
-            if (isManual) {
-                if (cloudData.manualIngredients) {
-                    cloudData.manualIngredients = cloudData.manualIngredients.filter(m => m.key !== key);
-                }
-            } else {
-                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
-                if (!cloudData.ingredientOverrides[key]) cloudData.ingredientOverrides[key] = {};
-                cloudData.ingredientOverrides[key].deleted = true;
-            }
-
-            if (cloudData.checkedIngredients) {
-                delete cloudData.checkedIngredients[key];
-            }
-
-            updateOrdersStatusAutomatically();
-            await saveAllData();
             renderSupermarketList();
             renderSummaryIngredients();
         }
