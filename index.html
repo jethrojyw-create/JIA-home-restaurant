@@ -11,7 +11,7 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[190px]">
+<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[210px]">
 
     <!-- 顶部导航 (固定在最上方) -->
     <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-3 flex justify-between items-center w-full max-w-lg mx-auto">
@@ -39,8 +39,8 @@
         </div>
     </header>
 
-    <!-- 🔍 搜索栏、星期选择、分类导航：改为绝对固定 (fixed) 在 Header 下方，永远置顶不随页面滚动隐藏 -->
-    <div class="fixed top-[57px] left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs">
+    <!-- 🔍 搜索栏、星期选择、分类导航：固定在 Header 下方（top改为了62px，确保不被遮挡） -->
+    <div class="fixed top-[62px] left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs">
         <div class="w-full max-w-lg mx-auto space-y-2">
             <!-- 搜索栏 -->
             <div class="relative w-full">
