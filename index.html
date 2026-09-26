@@ -117,7 +117,7 @@
             <div id="optionsListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs py-1"></div>
             <div class="flex space-x-2 pt-2">
                 <button onclick="closeOptionsModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold">取消</button>
-                <button onclick="confirmAddWithOptions()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold">确认加入购物车</button>
+                <button id="optionsConfirmBtn" onclick="confirmAddWithOptions()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold">确认加入购物车</button>
             </div>
         </div>
     </div>
@@ -174,6 +174,7 @@
         let searchKeyword = '';
         let cart = {};
         let activeDishForOptions = null;
+        let activeEditingOrderContext = null; // 用于记录当前正在直接修改的订单项
 
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
@@ -461,6 +462,7 @@
             let dish = (cloudData.dishes || []).find(d => d.id === dishId);
             if (!dish) return;
             activeDishForOptions = dish;
+            activeEditingOrderContext = null; // 清除直接编辑状态
 
             document.getElementById('optionsDishName').innerText = `选择 ${translateDishName(dish.name)} 的配菜`;
             let container = document.getElementById('optionsListContainer');
@@ -482,12 +484,68 @@
                 }).join('');
             }
 
+            document.getElementById('optionsConfirmBtn').setAttribute('onclick', 'confirmAddWithOptions()');
             document.getElementById('optionsModal').classList.remove('hidden');
+        }
+
+        // 打开预定单中特定菜品的直接配菜修改弹窗
+        function openEditOrderOptionsModal(orderId, itemIndex) {
+            let order = (cloudData.orders || []).find(o => o.id === orderId);
+            if (!order || !order.items[itemIndex]) return;
+            let item = order.items[itemIndex];
+            let dish = (cloudData.dishes || []).find(d => d.id === item.id);
+            if (!dish) return;
+
+            activeEditingOrderContext = { orderId, itemIndex };
+            document.getElementById('optionsDishName').innerText = `修改 ${translateDishName(dish.name)} 的配菜`;
+
+            let container = document.getElementById('optionsListContainer');
+            let options = dish.options || dish.subOptions || [];
+            let currentSelected = item.selectedOptions || [];
+
+            container.innerHTML = options.map(opt => {
+                let optName = typeof opt === 'object' ? opt.name : opt;
+                let isChecked = currentSelected.includes(optName) ? 'checked' : '';
+                return `
+                    <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} class="w-4 h-4 text-amber-600 rounded">
+                            <span class="font-bold text-gray-800">${optName}</span>
+                        </div>
+                    </label>
+                `;
+            }).join('');
+
+            document.getElementById('optionsConfirmBtn').setAttribute('onclick', 'confirmEditOrderOptions()');
+            document.getElementById('optionsModal').classList.remove('hidden');
+        }
+
+        // 确认直接修改预定单中的配菜
+        async function confirmEditOrderOptions() {
+            if (!activeEditingOrderContext) return;
+            let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
+            let selectedOptions = [];
+            checkboxes.forEach(cb => selectedOptions.push(cb.value));
+            selectedOptions.sort();
+
+            let { orderId, itemIndex } = activeEditingOrderContext;
+            await fetchAllData();
+            let order = (cloudData.orders || []).find(o => o.id === orderId);
+            if (order && order.items[itemIndex]) {
+                order.items[itemIndex].selectedOptions = selectedOptions;
+                order.items[itemIndex].subOption = selectedOptions.join(', ');
+                await saveAllData();
+            }
+
+            closeOptionsModal();
+            renderMyOrdersList();
+            alert('配菜修改成功！');
         }
 
         function closeOptionsModal() {
             document.getElementById('optionsModal').classList.add('hidden');
             activeDishForOptions = null;
+            activeEditingOrderContext = null;
         }
 
         function confirmAddWithOptions() {
@@ -502,7 +560,6 @@
             selectedOptions.sort();
             let key = `${activeDishForOptions.id}_${selectedOptions.join('_')}`;
 
-            // 限制每个菜品/规格可点数量固定为 1
             cart[key] = {
                 dish: activeDishForOptions,
                 count: 1,
@@ -518,7 +575,6 @@
             if (!dish) return;
 
             let key = `${dish.id}_`;
-            // 限制数量只能是 1
             cart[key] = {
                 dish: dish,
                 count: 1,
@@ -586,7 +642,7 @@
                     name: item.dish.name,
                     subOption: item.selectedOptions.join(', '),
                     selectedOptions: item.selectedOptions,
-                    count: 1 // 严格为1
+                    count: 1
                 });
             }
 
@@ -681,11 +737,17 @@
                             ${order.items.map((i, index) => {
                                 let opts = i.selectedOptions ? i.selectedOptions.join(', ') : i.subOption;
                                 let subText = opts ? ` (${opts})` : '';
+
+                                // 判断该菜品是否有配菜选项
+                                let dish = (cloudData.dishes || []).find(d => d.id === i.id);
+                                let hasOptions = dish && dish.options && dish.options.length > 0;
+                                let editBtnHtml = hasOptions ? `<button onclick="openEditOrderOptionsModal(${order.id},${index})" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> 修改</button>` : '';
+
                                 return `
                                     <div class="flex justify-between items-center bg-white p-2 rounded-lg border">
                                         <span>${translateDishName(i.name)}${subText} x1</span>
                                         <div class="space-x-2">
-                                            <button onclick="editMyOrderItem(${order.id},${index})" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> 修改</button>
+                                            ${editBtnHtml}
                                             <button onclick="deleteMyOrderItem(${order.id},${index})" class="text-red-600 font-bold text-[11px]"><i class="fa-solid fa-trash"></i> 删除</button>
                                         </div>
                                     </div>
@@ -707,7 +769,6 @@
             cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
             await saveAllData();
             renderMyOrdersList();
-            renderDishes();
         }
 
         async function deleteMyOrderItem(orderId, itemIndex) {
@@ -721,35 +782,7 @@
                 }
                 await saveAllData();
                 renderMyOrdersList();
-                renderDishes();
             }
-        }
-
-        async function editMyOrderItem(orderId, itemIndex) {
-            let order = (cloudData.orders || []).find(o => o.id === orderId);
-            if (!order || !order.items[itemIndex]) return;
-            let targetItem = order.items[itemIndex];
-
-            // 将该项加入购物车供修改
-            let key = `${targetItem.id}_${(targetItem.selectedOptions || []).join('_')}`;
-            cart[key] = {
-                dish: { id: targetItem.id, name: targetItem.name },
-                count: 1,
-                selectedOptions: targetItem.selectedOptions || []
-            };
-            selectedDay = order.targetDay || '周一';
-            selectDay(selectedDay);
-
-            // 顺便从原单中剔除该项
-            order.items.splice(itemIndex, 1);
-            if (order.items.length === 0) {
-                cloudData.orders = cloudData.orders.filter(o => o.id !== orderId);
-            }
-            await saveAllData();
-
-            closeMyOrdersModal();
-            updateCartBar();
-            alert('已将该菜品加载到购物车，您可以调整后重新提交！');
         }
     </script>
 </body>
