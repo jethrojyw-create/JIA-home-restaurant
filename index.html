@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- 关键：加入 viewport-fit=cover 以适配 iPhone 顶部的刘海/灵动岛区域 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>家庭全周大采购 - 点菜端</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -11,10 +12,10 @@
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[210px]">
+<body class="bg-amber-50/40 text-gray-800 pb-36 pt-[240px]">
 
-    <!-- 顶部导航 (固定在最上方) -->
-    <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-3 flex justify-between items-center w-full max-w-lg mx-auto">
+    <!-- 顶部导航 (固定在最上方，并自动适配 iPhone 顶部安全区) -->
+    <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-3 flex justify-between items-center w-full max-w-lg mx-auto" style="padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));">
         <div class="flex items-center space-x-2">
             <span class="text-xl">🍲</span>
             <div>
@@ -39,8 +40,8 @@
         </div>
     </header>
 
-    <!-- 🔍 搜索栏、星期选择、分类导航：固定在 Header 下方（top改为了62px，确保不被遮挡） -->
-    <div class="fixed top-[62px] left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs">
+    <!-- 🔍 搜索栏、星期选择、分类导航：固定在顶部导航下方，动态计算安全区高度 -->
+    <div class="fixed left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-2 border-b border-amber-200/40 shadow-xs" style="top: calc(57px + env(safe-area-inset-top, 0px));">
         <div class="w-full max-w-lg mx-auto space-y-2">
             <!-- 搜索栏 -->
             <div class="relative w-full">
