@@ -181,7 +181,37 @@
         // 🧠 本地存储的翻译缓存池（持久化于 localStorage）
         let translationCache = JSON.parse(localStorage.getItem('family_order_trans_cache') || '{}');
 
-        // 🔠 英文首字母大写格式化函数（支持每个单词首字母大写，或整个短语首字母大写）
+        // 🌟 中国特色经典菜名/原料专业标准译法对照表（避免生硬直译）
+        const professionalDishDict = {
+            "大排面": "Noodles with Fried Spare Ribs",
+            "上海大排面": "Shanghai Pork Chop Noodles",
+            "炸酱面": "Zhajiangmian (Noodles with Soy Bean Paste)",
+            "老北京炸酱面": "Old Beijing Zhajiangmian",
+            "小笼包": "Steamed Pork Soup Dumplings",
+            "红烧肉": "Braised Pork Belly in Soy Sauce",
+            "宫保鸡丁": "Kung Pao Chicken",
+            "麻婆豆腐": "Mapo Tofu",
+            "担担面": "Dan Dan Noodles",
+            "锅包肉": "Sweet and Sour Crispy Pork",
+            "水饺": "Boiled Dumplings",
+            "葱油拌面": "Scallion Oil Noodles",
+            "牛肉面": "Beef Noodle Soup",
+            "酸辣汤": "Hot and Sour Soup",
+            "蛋炒饭": "Egg Fried Rice",
+            // 原料或配菜偏好选项专业规范
+            "微辣": "Mild Spicy",
+            "中辣": "Medium Spicy",
+            "特辣": "Extra Spicy",
+            "不加葱": "No Scallions",
+            "不加蒜": "No Garlic",
+            "不要香菜": "No Coriander",
+            "少油": "Less Oil",
+            "少盐": "Less Salt",
+            "加辣": "Extra Spicy",
+            "加面": "Extra Noodles"
+        };
+
+        // 🔠 英文首字母大写格式化函数
         function capitalizeWords(str) {
             if (!str) return '';
             return str.replace(/\b\w/g, l => l.toUpperCase());
@@ -189,6 +219,13 @@
 
         async function onlineTranslate(text) {
             if (!text || currentLang === 'zh') return text;
+
+            // 1. 优先匹配专业对照表
+            if (professionalDishDict[text]) {
+                return professionalDishDict[text];
+            }
+
+            // 2. 检查缓存
             if (translationCache[text]) return capitalizeWords(translationCache[text]);
 
             try {
