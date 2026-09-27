@@ -176,9 +176,8 @@
         let activeEditingOrderContext = null;
         let activeEditingCartKey = null;
 
-        // 💡 完整全面的中英文餐饮原料与菜品对照大词库（按长度降序排列以优先匹配复合词）
-        const translationDictionary = {
-            // === 经典家常菜品精确匹配 ===
+        // 💡 完整全面的整句词组翻译词库 (包含经典菜名、常见家常菜、食材原料)
+        const dishDictionary = {
             "红烧肉": "Braised Pork Belly",
             "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
             "番茄炒蛋": "Scrambled Eggs with Tomato",
@@ -197,12 +196,18 @@
             "番茄牛腩": "Tomato & Beef Brisket Soup",
             "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
             "葱油拌面": "Scallion Oil Noodles",
-            "土豆丝": "Shredded Potatoes",
             "酸辣土豆丝": "Hot and Sour Shredded Potatoes",
             "青椒肉丝": "Shredded Pork with Green Peppers",
-            "番茄炒蛋": "Scrambled Eggs with Tomato",
+            "土豆烧牛肉": "Braised Beef with Potatoes",
+            "番茄蛋汤": "Tomato and Egg Soup",
+            "清炒土豆丝": "Stir-fried Shredded Potatoes",
+            "蒜蓉西兰花": "Broccoli with Garlic Sauce",
+            "红烧茄子": "Braised Eggplant",
+            "虎皮青椒": "Pan-fried Green Peppers"
+        };
 
-            // === 常见蔬菜与食材原料 (蔬菜/肉类/海鲜/菌菇) ===
+        // 单个基础原料/名词短语对照（用于未完全匹配整句时的完美短语降级翻译）
+        const ingredientDictionary = {
             "土豆": "Potato", "马铃薯": "Potato",
             "西红柿": "Tomato", "番茄": "Tomato",
             "黄瓜": "Cucumber",
@@ -217,32 +222,26 @@
             "豆腐": "Tofu",
             "青椒": "Green Pepper", "辣椒": "Chili Pepper",
             "青菜": "Green Vegetables", "白菜": "Chinese Cabbage", "包菜": "Cabbage", "生菜": "Lettuce",
-            "芹菜": "Celery", "菠菜": "Spinach", "韭菜": "Chives", "豆角": "Green Beans", "四季豆": "French Beans",
+            "芹菜": "Celery", "菠菜": "Spinach", "韭菜": "Chives", "豆角": "Green Beans",
             "蘑菇": "Mushroom", "香菇": "Shiitake Mushroom", "木耳": "Black Fungus",
             "面条": "Noodles", "面": "Noodles",
             "米饭": "Rice", "饭": "Rice",
-            "汤": "Soup",
-            "粥": "Congee",
+            "汤": "Soup", "粥": "Congee",
             "葱": "Scallion", "大蒜": "Garlic", "蒜": "Garlic", "姜": "Ginger", "香菜": "Coriander",
-
-            // === 烹饪方式与调味修饰词 ===
-            "红烧": "Braised",
-            "清蒸": "Steamed",
-            "水煮": "Boiled",
-            "爆炒": "Stir-fried",
-            "炒": "Stir-fried",
-            "糖醋": "Sweet & Sour",
-            "椒盐": "Salt & Pepper",
-            "凉拌": "Cold Tossed",
-            "炸": "Fried",
-            "炖": "Stewed",
-            "焖": "Braised"
+            "红烧": "Braised", "清蒸": "Steamed", "水煮": "Boiled", "爆炒": "Stir-fried",
+            "炒": "Stir-fried", "糖醋": "Sweet & Sour", "凉拌": "Cold Tossed", "炖": "Stewed"
         };
 
+        // 配菜与口味偏好完整短语对照（精准解决“加XX”、“不要XX”整句翻译）
         const optionTranslationMap = {
             "微辣": "Mild Spicy", "中辣": "Medium Spicy", "重辣": "Extra Spicy", "不辣": "Not Spicy",
-            "多加葱": "Extra Scallion", "不要葱": "No Scallion", "加辣": "Add Chili", "去香菜": "No Coriander",
-            "少油": "Less Oil", "少盐": "Less Salt", "不加配菜": "No Extra Sides", "无": "None", "不加": "None"
+            "多加葱": "Extra Scallion", "不要葱": "No Scallion", "加葱": "Extra Scallion",
+            "加辣": "Add Chili", "去香菜": "No Coriander", "不要香菜": "No Coriander",
+            "少油": "Less Oil", "少盐": "Less Salt",
+            "不加配菜": "No Extra Sides", "无": "None", "不加": "None",
+            "加土豆": "Extra Potato", "加鸡蛋": "Extra Egg", "加牛肉": "Extra Beef",
+            "加肉": "Extra Pork", "加虾": "Extra Shrimp", "加豆腐": "Extra Tofu",
+            "不要辣椒": "No Chili", "加蒜": "Extra Garlic"
         };
 
         const categoryTranslationMap = {
@@ -253,15 +252,15 @@
         function translateDishName(name) {
             if (currentLang !== 'en') return name;
             if (!name) return '';
-            if (translationDictionary[name]) return translationDictionary[name];
+            // 1. 优先匹配整句菜名
+            if (dishDictionary[name]) return dishDictionary[name];
 
-            // 智能化片段贪婪匹配：按词典中较长的词优先替换
+            // 2. 如果是复合词或未在完整菜名中，按完整词组（按词长降序）整体替换，避免生硬拆字
             let translated = name;
-            let sortedKeys = Object.keys(translationDictionary).sort((a, b) => b.length - a.length);
-
+            let sortedKeys = Object.keys(ingredientDictionary).sort((a, b) => b.length - a.length);
             for (let zh of sortedKeys) {
                 if (translated.includes(zh)) {
-                    translated = translated.replaceAll(zh, translationDictionary[zh]);
+                    translated = translated.replaceAll(zh, ingredientDictionary[zh]);
                 }
             }
             return translated;
@@ -270,13 +269,25 @@
         function translateOptionName(opt) {
             if (currentLang !== 'en') return opt;
             if (!opt) return '';
+            // 1. 优先精准匹配整句配菜偏好（如“加葱”、“加土豆”、“不要香菜”）
             if (optionTranslationMap[opt]) return optionTranslationMap[opt];
+
+            // 2. 动态智能解析前缀（加/不要/去）+ 后面跟随的原料
             let translated = opt;
             for (let zh in optionTranslationMap) {
                 if (translated.includes(zh)) {
                     translated = translated.replaceAll(zh, optionTranslationMap[zh]);
                 }
             }
+
+            // 如果还包含“加”字，进行智能化词缀替换
+            if (translated.includes("加")) {
+                translated = translated.replace("加", "Extra ");
+            }
+            if (translated.includes("不要") || translated.includes("去")) {
+                translated = translated.replace("不要", "No ").replace("去", "No ");
+            }
+
             return translated;
         }
 
