@@ -176,20 +176,9 @@
         let activeEditingOrderContext = null;
         let activeEditingCartKey = null;
 
-        // 全面覆盖的食材、烹饪方式及常见家常菜中英文词库
+        // 💡 完整全面的中英文餐饮原料与菜品对照大词库（按长度降序排列以优先匹配复合词）
         const translationDictionary = {
-            // 常见食材 (包含土豆、番茄等基础词)
-            "土豆": "Potato", "番茄": "Tomato", "西红柿": "Tomato", "鸡蛋": "Egg", "肉": "Pork",
-            "牛肉": "Beef", "鸡": "Chicken", "鱼": "Fish", "虾": "Shrimp", "排骨": "Pork Ribs",
-            "黄瓜": "Cucumber", "豆腐": "Tofu", "茄子": "Eggplant", "辣椒": "Pepper", "青菜": "Green Veggie",
-            "白菜": "Chinese Cabbage", "面": "Noodles", "饭": "Rice", "汤": "Soup", "粥": "Congee",
-            "葱": "Scallion", "蒜": "Garlic", "姜": "Ginger", "香菜": "Coriander",
-
-            // 烹饪与修饰词
-            "红烧": "Braised", "清蒸": "Steamed", "水煮": "Boiled", "爆炒": "Stir-fried", "炒": "Stir-fried",
-            "糖醋": "Sweet & Sour", "椒盐": "Salt & Pepper", "凉拌": "Cold Tossed", "炸": "Fried",
-
-            // 完整高频菜名精准对照
+            // === 经典家常菜品精确匹配 ===
             "红烧肉": "Braised Pork Belly",
             "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
             "番茄炒蛋": "Scrambled Eggs with Tomato",
@@ -207,7 +196,47 @@
             "清炒时蔬": "Stir-fried Seasonal Vegetables",
             "番茄牛腩": "Tomato & Beef Brisket Soup",
             "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
-            "葱油拌面": "Scallion Oil Noodles"
+            "葱油拌面": "Scallion Oil Noodles",
+            "土豆丝": "Shredded Potatoes",
+            "酸辣土豆丝": "Hot and Sour Shredded Potatoes",
+            "青椒肉丝": "Shredded Pork with Green Peppers",
+            "番茄炒蛋": "Scrambled Eggs with Tomato",
+
+            // === 常见蔬菜与食材原料 (蔬菜/肉类/海鲜/菌菇) ===
+            "土豆": "Potato", "马铃薯": "Potato",
+            "西红柿": "Tomato", "番茄": "Tomato",
+            "黄瓜": "Cucumber",
+            "茄子": "Eggplant",
+            "鸡蛋": "Egg", "蛋": "Egg",
+            "牛肉": "Beef",
+            "猪肉": "Pork", "肉": "Pork",
+            "鸡肉": "Chicken", "鸡": "Chicken",
+            "排骨": "Pork Ribs",
+            "鱼": "Fish",
+            "虾": "Shrimp",
+            "豆腐": "Tofu",
+            "青椒": "Green Pepper", "辣椒": "Chili Pepper",
+            "青菜": "Green Vegetables", "白菜": "Chinese Cabbage", "包菜": "Cabbage", "生菜": "Lettuce",
+            "芹菜": "Celery", "菠菜": "Spinach", "韭菜": "Chives", "豆角": "Green Beans", "四季豆": "French Beans",
+            "蘑菇": "Mushroom", "香菇": "Shiitake Mushroom", "木耳": "Black Fungus",
+            "面条": "Noodles", "面": "Noodles",
+            "米饭": "Rice", "饭": "Rice",
+            "汤": "Soup",
+            "粥": "Congee",
+            "葱": "Scallion", "大蒜": "Garlic", "蒜": "Garlic", "姜": "Ginger", "香菜": "Coriander",
+
+            // === 烹饪方式与调味修饰词 ===
+            "红烧": "Braised",
+            "清蒸": "Steamed",
+            "水煮": "Boiled",
+            "爆炒": "Stir-fried",
+            "炒": "Stir-fried",
+            "糖醋": "Sweet & Sour",
+            "椒盐": "Salt & Pepper",
+            "凉拌": "Cold Tossed",
+            "炸": "Fried",
+            "炖": "Stewed",
+            "焖": "Braised"
         };
 
         const optionTranslationMap = {
@@ -226,9 +255,11 @@
             if (!name) return '';
             if (translationDictionary[name]) return translationDictionary[name];
 
-            // 逐字/逐词组合翻译：按字典替换所有匹配的中文食材或烹饪词
+            // 智能化片段贪婪匹配：按词典中较长的词优先替换
             let translated = name;
-            for (let zh in translationDictionary) {
+            let sortedKeys = Object.keys(translationDictionary).sort((a, b) => b.length - a.length);
+
+            for (let zh of sortedKeys) {
                 if (translated.includes(zh)) {
                     translated = translated.replaceAll(zh, translationDictionary[zh]);
                 }
