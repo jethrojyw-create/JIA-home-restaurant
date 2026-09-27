@@ -177,10 +177,11 @@
         let activeEditingOrderContext = null;
         let activeEditingCartKey = null;
 
-        // 全面丰富的菜品中英文对照表
+        // 全面且强兼容的菜品中英文对照表（支持包含匹配）
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
             "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
+            "番茄炒蛋": "Scrambled Eggs with Tomato",
             "宫保鸡丁": "Kung Pao Chicken",
             "麻婆豆腐": "Mapo Tofu",
             "水煮肉片": "Boiled Pork Slices",
@@ -225,12 +226,27 @@
 
         function translateDishName(name) {
             if (currentLang !== 'en') return name;
-            return dishTranslationMap[name] || name;
+            if (!name) return '';
+            if (dishTranslationMap[name]) return dishTranslationMap[name];
+            // 模糊智能匹配（只要云端名字包含字典中的某个词，即自动转换）
+            for (let zhKey in dishTranslationMap) {
+                if (name.includes(zhKey)) {
+                    return dishTranslationMap[zhKey];
+                }
+            }
+            return name; // 没匹配到则原样返回
         }
 
         function translateOptionName(opt) {
             if (currentLang !== 'en') return opt;
-            return optionTranslationMap[opt] || opt;
+            if (!opt) return '';
+            if (optionTranslationMap[opt]) return optionTranslationMap[opt];
+            for (let zhKey in optionTranslationMap) {
+                if (opt.includes(zhKey)) {
+                    return optionTranslationMap[zhKey];
+                }
+            }
+            return opt;
         }
 
         function translateCategory(cat) {
