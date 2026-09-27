@@ -56,10 +56,19 @@
         <!-- 面板 1：周末采购原材料清单 -->
         <div id="panel-summary" class="space-y-3">
             <div class="bg-white rounded-2xl p-3 border border-amber-200/60 shadow-xs space-y-2">
-                <h3 class="font-bold text-xs text-amber-900 flex items-center justify-between">
-                    <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>扣除库存后的实际需购清单</span>
-                    <span class="text-[10px] text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-bold">自动扣库存</span>
-                </h3>
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xs text-amber-900 flex items-center">
+                        <span><i class="fa-solid fa-basket-shopping mr-1 text-amber-600"></i>扣除库存后的实际需购清单</span>
+                    </h3>
+                    <button onclick="openAddManualShoppingItem()" class="bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold px-2.5 py-1 rounded-lg transition shadow-xs flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>手动添加原材料</span>
+                    </button>
+                </div>
+                <div class="flex justify-between items-center text-[10px] text-amber-700 bg-amber-100 px-2 py-1 rounded-lg font-bold">
+                    <span>自动扣库存</span>
+                    <span>支持手动增删改采购项</span>
+                </div>
                 <div id="summaryListContainer" class="space-y-2 pt-1">
                     <div class="text-center py-10 text-gray-400 text-xs">正在计算采购原材料...</div>
                 </div>
@@ -198,25 +207,25 @@
         </div>
     </div>
 
-    <!-- 临时加购弹窗 -->
+    <!-- 临时加购/修改采购项弹窗 -->
     <div id="manualItemModal" class="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-xs rounded-2xl p-4 shadow-2xl space-y-3">
-            <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">修改采购项目</h3>
+            <h3 class="font-bold text-sm text-amber-900" id="manualModalTitle">手动添加采购项目</h3>
             <input type="hidden" id="editManualKey">
-            <input type="hidden" id="editItemType">
+            <input type="hidden" id="editItemType" value="manual">
             <div class="space-y-2.5 text-xs">
                 <div>
                     <label class="text-gray-500 block mb-1">原材料名称</label>
-                    <input type="text" id="manualNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                    <input type="text" id="manualNameInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none" placeholder="例如：酱油">
                 </div>
                 <div class="flex space-x-2">
                     <div class="flex-1">
                         <label class="text-gray-500 block mb-1">数量</label>
-                        <input type="number" id="manualTotalInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                        <input type="number" id="manualTotalInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none" placeholder="1">
                     </div>
                     <div class="flex-1">
                         <label class="text-gray-500 block mb-1">单位</label>
-                        <input type="text" id="manualUnitInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none">
+                        <input type="text" id="manualUnitInput" class="w-full bg-gray-50 border rounded-xl px-3 py-2 outline-none" placeholder="瓶/g">
                     </div>
                 </div>
             </div>
@@ -529,23 +538,127 @@
             let list = getAggregatedIngredients();
 
             if (list.length === 0) {
-                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">所需原材料全部由家里库存抵扣完毕，无需购买！🎉</div>`;
+                container.innerHTML = `<div class="text-center py-10 text-gray-400 text-xs">所需原材料全部由家里库存抵扣完毕，或暂无购物需求！🎉</div>`;
                 return;
             }
 
             container.innerHTML = list.map(item => {
                 let displayTotal = item.isText ? item.total : (Number.isInteger(item.total) ? item.total : item.total.toFixed(1));
                 let stockInfo = item.stockUsed ? `<span class="text-[10px] text-emerald-600 block">已用库存抵扣 ${item.stockUsed}${item.unit}</span>` : '';
+                let manualBadge = item.isManual ? `<span class="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded ml-1">手动添加</span>` : '';
+
                 return `
                     <div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl flex items-center justify-between">
                         <div>
-                            <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
+                            <div class="flex items-center">
+                                <span class="font-bold text-xs text-amber-900"><i class="fa-solid fa-check text-amber-600 mr-1.5"></i>${item.name}</span>
+                                ${manualBadge}
+                            </div>
                             ${stockInfo}
                         </div>
-                        <span class="bg-amber-600 text-white font-bold px-2.5 py-0.5 rounded text-xs">需买: ${displayTotal}${item.unit || '份'}</span>
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-amber-600 text-white font-bold px-2.5 py-1 rounded text-xs">需买: ${displayTotal}${item.unit || '份'}</span>
+                            <div class="flex space-x-1">
+                                <button onclick="openEditManualItem('${item.key}', ${item.isManual ? 'true' : 'false'})" class="bg-white border text-gray-600 hover:bg-gray-50 px-2 py-1 rounded-lg text-xs" title="修改"><i class="fa-solid fa-pen"></i></button>
+                                <button onclick="deleteShoppingItem('${item.key}', ${item.isManual ? 'true' : 'false'})" class="bg-red-50 hover:bg-red-100 text-red-600 px-2 py-1 rounded-lg text-xs" title="删除"><i class="fa-solid fa-trash"></i></button>
+                            </div>
+                        </div>
                     </div>
                 `;
             }).join('');
+        }
+
+        // 手动添加或删除/修改清单原材料的相关函数
+        function openAddManualShoppingItem() {
+            document.getElementById('manualModalTitle').innerText = '手动添加采购原材料';
+            document.getElementById('editManualKey').value = '';
+            document.getElementById('editItemType').value = 'manual';
+            document.getElementById('manualNameInput').value = '';
+            document.getElementById('manualTotalInput').value = '';
+            document.getElementById('manualUnitInput').value = '';
+            document.getElementById('manualItemModal').classList.remove('hidden');
+        }
+
+        function openEditManualItem(key, isManual) {
+            if (isManual) {
+                let item = (cloudData.manualIngredients || []).find(m => m.key === key);
+                if (!item) return;
+                document.getElementById('manualModalTitle').innerText = '修改手动采购项';
+                document.getElementById('editManualKey').value = key;
+                document.getElementById('editItemType').value = 'manual';
+                document.getElementById('manualNameInput').value = item.name;
+                document.getElementById('manualTotalInput').value = item.total;
+                document.getElementById('manualUnitInput').value = item.unit || '';
+                document.getElementById('manualItemModal').classList.remove('hidden');
+            } else {
+                // 如果是自动生成的原材料，可以通过 override 机制调整数量或名称
+                let rawList = getRawAggregatedIngredients();
+                let item = rawList.find(i => i.key === key);
+                if (!item) return;
+                document.getElementById('manualModalTitle').innerText = '修改自动计算采购项';
+                document.getElementById('editManualKey').value = key;
+                document.getElementById('editItemType').value = 'auto';
+                document.getElementById('manualNameInput').value = item.name;
+                document.getElementById('manualTotalInput').value = item.total;
+                document.getElementById('manualUnitInput').value = item.unit || '';
+                document.getElementById('manualItemModal').classList.remove('hidden');
+            }
+        }
+
+        function closeManualModal() {
+            document.getElementById('manualItemModal').classList.add('hidden');
+        }
+
+        async function saveManualItem() {
+            let key = document.getElementById('editManualKey').value;
+            let itemType = document.getElementById('editItemType').value;
+            let name = document.getElementById('manualNameInput').value.trim();
+            let total = parseFloat(document.getElementById('manualTotalInput').value);
+            let unit = document.getElementById('manualUnitInput').value.trim();
+
+            if (!name || isNaN(total)) {
+                alert('请填写完整的名称和有效数量！');
+                return;
+            }
+
+            await fetchAllData();
+
+            if (itemType === 'manual') {
+                if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
+                let item = cloudData.manualIngredients.find(m => m.key === key);
+                if (item) {
+                    item.name = name;
+                    item.total = total;
+                    item.unit = unit;
+                } else {
+                    let newKey = 'manual_' + Date.now();
+                    cloudData.manualIngredients.push({ key: newKey, name: name, total: total, unit: unit });
+                }
+            } else if (itemType === 'auto') {
+                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
+                cloudData.ingredientOverrides[key] = { name: name, unit: unit, total: total, deleted: false };
+            }
+
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            closeManualModal();
+            renderAll();
+        }
+
+        async function deleteShoppingItem(key, isManual) {
+            if (!confirm('确定要从采购清单中移除该项吗？')) return;
+            await fetchAllData();
+
+            if (isManual) {
+                cloudData.manualIngredients = (cloudData.manualIngredients || []).filter(m => m.key !== key);
+            } else {
+                if (!cloudData.ingredientOverrides) cloudData.ingredientOverrides = {};
+                cloudData.ingredientOverrides[key] = { deleted: true };
+            }
+
+            updateOrdersStatusAutomatically();
+            await saveAllData();
+            renderAll();
         }
 
         function renderTodaySummary() {
@@ -559,7 +672,6 @@
             }
 
             let dishCounts = {};
-            let ingredientSummary = {};
             let dishesMap = {};
             (cloudData.dishes || []).forEach(d => { dishesMap[d.id] = d; });
 
@@ -571,27 +683,6 @@
                         dishCounts[key] = { name: item.name, count: 0 };
                     }
                     dishCounts[key].count += (item.count || 1);
-
-                    let dish = dishesMap[item.id];
-                    if (dish && dish.ingredients) {
-                        let times = item.count || 1;
-                        let rawParts = dish.ingredients.split(/[,，;；]/);
-                        rawParts.forEach(part => {
-                            part = part.trim();
-                            if (!part) return;
-                            let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
-                            if (match) {
-                                let ingName = match[1].trim();
-                                let val = parseFloat(match[2]);
-                                let unit = match[3] ? match[3].trim() : '';
-                                let ingKey = `auto_${ingName}_${unit}`;
-                                if (!ingredientSummary[ingKey]) {
-                                    ingredientSummary[ingKey] = { name: ingName, unit: unit, total: 0 };
-                                }
-                                ingredientSummary[ingKey].total += val * times;
-                            }
-                        });
-                    }
                 });
             });
 
@@ -635,7 +726,7 @@
                     let dish = dishesMap[item.id];
                     if (dish && dish.ingredients) {
                         let times = item.count || 1;
-                        let rawParts = dish.ingredients.split(/[,，;；]/);
+                        let rawParts = dish.ingredients.split(/[,[,;；]/);
                         rawParts.forEach(part => {
                             part = part.trim();
                             if (!part) return;
@@ -1048,54 +1139,6 @@
             updateOrdersStatusAutomatically();
             renderSupermarketList();
             await saveAllData();
-        }
-
-        function openAddManualShoppingItem() {
-            document.getElementById('manualModalTitle').innerText = '临时加买原材料';
-            document.getElementById('editManualKey').value = '';
-            document.getElementById('editItemType').value = 'manual';
-            document.getElementById('manualNameInput').value = '';
-            document.getElementById('manualTotalInput').value = '';
-            document.getElementById('manualUnitInput').value = '';
-            document.getElementById('manualItemModal').classList.remove('hidden');
-        }
-
-        function closeManualModal() {
-            document.getElementById('manualItemModal').classList.add('hidden');
-        }
-
-        async function saveManualItem() {
-            let key = document.getElementById('editManualKey').value;
-            let itemType = document.getElementById('editItemType').value;
-            let name = document.getElementById('manualNameInput').value.trim();
-            let total = parseFloat(document.getElementById('manualTotalInput').value);
-            let unit = document.getElementById('manualUnitInput').value.trim();
-
-            if (!name || isNaN(total)) {
-                alert('请填写完整的名称和有效数量！');
-                return;
-            }
-
-            await fetchAllData();
-
-            if (itemType === 'manual') {
-                if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
-                let item = cloudData.manualIngredients.find(m => m.key === key);
-                if (item) {
-                    item.name = name;
-                    item.total = total;
-                    item.unit = unit;
-                } else {
-                    let newKey = 'manual_' + Date.now();
-                    cloudData.manualIngredients.push({ key: newKey, name: name, total: total, unit: unit });
-                }
-            }
-
-            updateOrdersStatusAutomatically();
-            await saveAllData();
-            closeManualModal();
-            renderSupermarketList();
-            renderSummaryIngredients();
         }
     </script>
 </body>
