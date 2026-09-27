@@ -13,7 +13,7 @@
 </head>
 <body class="bg-amber-50/40 text-gray-800 pb-36 pt-[160px]">
 
-    <!-- 顶部导航 (固定在最上方，完美适配 iPhone 安全区) -->
+    <!-- 顶部导航 -->
     <header class="bg-white shadow-xs fixed top-0 left-0 right-0 z-40 px-3 py-1.5 flex justify-between items-center w-full max-w-lg mx-auto" style="padding-top: calc(0.35rem + env(safe-area-inset-top, 0px));">
         <div class="flex items-center space-x-1.5">
             <span class="text-lg">🍲</span>
@@ -39,7 +39,7 @@
         </div>
     </header>
 
-    <!-- 🔍 搜索栏、星期选择、分类导航：紧贴顶部 Banner 底部 -->
+    <!-- 🔍 搜索栏、星期选择、分类导航 -->
     <div class="fixed left-0 right-0 z-30 bg-amber-50/95 backdrop-blur px-3 py-1.5 border-b border-amber-200/40 shadow-xs" style="top: calc(44px + env(safe-area-inset-top, 0px));">
         <div class="w-full max-w-lg mx-auto space-y-1">
             <!-- 搜索栏 -->
@@ -84,7 +84,6 @@
 
     <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-2">
-        <!-- 菜品列表容器 -->
         <div id="dishListContainer" class="grid grid-cols-1 gap-2">
             <div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border" data-i18n="loading_dishes">正在加载云端菜单库...</div>
         </div>
@@ -177,76 +176,59 @@
         let activeEditingOrderContext = null;
         let activeEditingCartKey = null;
 
-        // 全面且强兼容的菜品中英文对照表（支持包含匹配）
+        // 核心翻译引擎：字典 + 智能匹配 + 自动翻译兜底
         const dishTranslationMap = {
-            "红烧肉": "Braised Pork Belly",
-            "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
-            "番茄炒蛋": "Scrambled Eggs with Tomato",
-            "宫保鸡丁": "Kung Pao Chicken",
-            "麻婆豆腐": "Mapo Tofu",
-            "水煮肉片": "Boiled Pork Slices",
-            "清蒸鱼": "Steamed Fish",
-            "拍黄瓜": "Smashed Cucumbers",
-            "酸辣汤": "Hot and Sour Soup",
-            "蛋炒饭": "Egg Fried Rice",
-            "红烧排骨": "Braised Pork Ribs",
-            "糖醋里脊": "Sweet and Sour Pork",
-            "地三鲜": "Stir-fried Potatoes, Eggplants & Peppers",
-            "可乐鸡翅": "Cola Chicken Wings",
-            "清炒时蔬": "Stir-fried Seasonal Vegetables",
-            "番茄牛腩": "Tomato & Beef Brisket Soup",
-            "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
-            "葱油拌面": "Scallion Oil Noodles"
+            "红烧肉": "Braised Pork Belly", "西红柿": "Tomato", "炒蛋": "Scrambled Eggs", "鸡蛋": "Eggs",
+            "宫保鸡丁": "Kung Pao Chicken", "麻婆豆腐": "Mapo Tofu", "水煮肉片": "Boiled Pork Slices",
+            "清蒸鱼": "Steamed Fish", "拍黄瓜": "Smashed Cucumbers", "酸辣汤": "Hot and Sour Soup",
+            "蛋炒饭": "Egg Fried Rice", "红烧排骨": "Braised Pork Ribs", "糖醋里脊": "Sweet and Sour Pork",
+            "地三鲜": "Stir-fried Potatoes, Eggplants & Peppers", "可乐鸡翅": "Cola Chicken Wings",
+            "清炒时蔬": "Seasonal Vegetables", "番茄牛腩": "Tomato Beef Brisket", "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
+            "葱油拌面": "Scallion Oil Noodles", "牛肉": "Beef", "猪肉": "Pork", "鸡肉": "Chicken", "排骨": "Pork Ribs",
+            "炒": "Stir-fried", "汤": "Soup", "面": "Noodles", "饭": "Rice", "鱼": "Fish", "虾": "Shrimp"
         };
 
-        // 配菜、原料及口味偏好对照表
         const optionTranslationMap = {
-            "微辣": "Mild Spicy",
-            "中辣": "Medium Spicy",
-            "重辣": "Extra Spicy",
-            "不辣": "Not Spicy",
-            "多加葱": "Extra Scallion",
-            "不要葱": "No Scallion",
-            "加辣": "Add Chili",
-            "去香菜": "No Coriander",
-            "少油": "Less Oil",
-            "少盐": "Less Salt",
-            "不加配菜": "No Extra Sides",
-            "无": "None",
-            "不加": "None"
+            "微辣": "Mild Spicy", "中辣": "Medium Spicy", "重辣": "Extra Spicy", "不辣": "Not Spicy",
+            "多加葱": "Extra Scallion", "不要葱": "No Scallion", "加辣": "Add Chili", "去香菜": "No Coriander",
+            "少油": "Less Oil", "少盐": "Less Salt", "不加配菜": "No Extra Sides", "无": "None", "不加": "None"
         };
 
         const categoryTranslationMap = {
-            "热菜": "Hot Dish",
-            "凉菜": "Cold Dish",
-            "主食/汤品": "Staple / Soup",
-            "饮品/甜点": "Drink / Dessert",
-            "点心/面包": "Bakery / Bread"
+            "热菜": "Hot Dish", "凉菜": "Cold Dish", "主食/汤品": "Staple / Soup",
+            "饮品/甜点": "Drink / Dessert", "点心/面包": "Bakery / Bread"
         };
 
         function translateDishName(name) {
             if (currentLang !== 'en') return name;
             if (!name) return '';
             if (dishTranslationMap[name]) return dishTranslationMap[name];
-            // 模糊智能匹配（只要云端名字包含字典中的某个词，即自动转换）
-            for (let zhKey in dishTranslationMap) {
-                if (name.includes(zhKey)) {
-                    return dishTranslationMap[zhKey];
+
+            // 组合替换：如果名字中包含某些词，进行拼接翻译
+            let translated = name;
+            for (let zh in dishTranslationMap) {
+                if (translated.includes(zh)) {
+                    translated = translated.replace(zh, dishTranslationMap[zh]);
                 }
             }
-            return name; // 没匹配到则原样返回
+            // 如果替换后依然含有中文字符（说明有未收录的自定义菜名），自动转换为 Dish (自定义名) 提示
+            if (/[\u4e00-\u9fa5]/.test(translated)) {
+                return name + " (Dish)";
+            }
+            return translated;
         }
 
         function translateOptionName(opt) {
             if (currentLang !== 'en') return opt;
             if (!opt) return '';
             if (optionTranslationMap[opt]) return optionTranslationMap[opt];
-            for (let zhKey in optionTranslationMap) {
-                if (opt.includes(zhKey)) {
-                    return optionTranslationMap[zhKey];
+            let translated = opt;
+            for (let zh in optionTranslationMap) {
+                if (translated.includes(zh)) {
+                    translated = translated.replace(zh, optionTranslationMap[zh]);
                 }
             }
-            return opt;
+            return /[\u4e00-\u9fa5]/.test(translated) ? opt : translated;
         }
 
         function translateCategory(cat) {
@@ -264,15 +246,9 @@
                 nav_family_menu: "全家菜单",
                 nav_my_orders: "我的",
                 select_day_title: "选择预定哪一天的饭菜",
-                cat_all: "全部菜品",
-                cat_hot: "热菜",
-                cat_cold: "凉菜",
-                cat_soup: "主食/汤品",
-                cat_drink: "饮品/甜点",
-                cat_bakery: "点心/面包",
+                cat_all: "全部菜品", cat_hot: "热菜", cat_cold: "凉菜", cat_soup: "主食/汤品", cat_drink: "饮品/甜点", cat_bakery: "点心/面包",
                 loading_dishes: "正在加载云端菜单库...",
-                cart_selected: "已选",
-                cart_dishes: "样菜品",
+                cart_selected: "已选", cart_dishes: "样菜品",
                 btn_submit_order: "确认提交给采购员",
                 family_modal_title: "全家人本周点菜一览",
                 my_modal_title: "我的全部预定单记录",
@@ -280,10 +256,8 @@
                 user_modal_title: "欢迎点菜！请先告诉我们你是谁",
                 btn_start_ordering: "开始点菜",
                 modal_options_title: "选择配菜与口味偏好",
-                btn_cancel: "取消",
-                btn_confirm: "确认加入购物车",
-                btn_order: "点单 ➕",
-                btn_select_side: "选配菜 ➕",
+                btn_cancel: "取消", btn_confirm: "确认加入购物车",
+                btn_order: "点单 ➕", btn_select_side: "选配菜 ➕",
                 monday: "周一", tuesday: "周二", wednesday: "周三", thursday: "周四", friday: "周五", saturday: "周六", sunday: "周日",
                 status_pending: "待采购", status_purchased: "已采购", status_completed: "已完成"
             },
@@ -292,15 +266,9 @@
                 nav_family_menu: "Family Menu",
                 nav_my_orders: "My Orders",
                 select_day_title: "Select day for meal booking",
-                cat_all: "All Dishes",
-                cat_hot: "Hot Dishes",
-                cat_cold: "Cold Dishes",
-                cat_soup: "Staples/Soup",
-                cat_drink: "Drinks/Dessert",
-                cat_bakery: "Bakery/Bread",
+                cat_all: "All Dishes", cat_hot: "Hot Dishes", cat_cold: "Cold Dishes", cat_soup: "Staples/Soup", cat_drink: "Drinks/Dessert", cat_bakery: "Bakery/Bread",
                 loading_dishes: "Loading cloud menu...",
-                cart_selected: "Selected",
-                cart_dishes: "items",
+                cart_selected: "Selected", cart_dishes: "items",
                 btn_submit_order: "Submit to Buyer",
                 family_modal_title: "Family Weekly Orders Overview",
                 my_modal_title: "My Booking History",
@@ -308,10 +276,8 @@
                 user_modal_title: "Welcome! Please tell us who you are",
                 btn_start_ordering: "Start Ordering",
                 modal_options_title: "Select Sides & Preferences",
-                btn_cancel: "Cancel",
-                btn_confirm: "Confirm & Add",
-                btn_order: "Order ➕",
-                btn_select_side: "Sides ➕",
+                btn_cancel: "Cancel", btn_confirm: "Confirm & Add",
+                btn_order: "Order ➕", btn_select_side: "Sides ➕",
                 monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday",
                 status_pending: "Pending", status_purchased: "Purchased", status_completed: "Completed"
             }
