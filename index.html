@@ -82,7 +82,7 @@
         </div>
     </div>
 
-    <!-- 主体内容区（已减小顶部内边距，消除与搜索栏之间的空白） -->
+    <!-- 主体内容区 -->
     <main class="w-full max-w-lg mx-auto p-3 space-y-2">
         <!-- 菜品列表容器 -->
         <div id="dishListContainer" class="grid grid-cols-1 gap-2">
@@ -111,13 +111,13 @@
     <div id="optionsModal" class="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center hidden p-3">
         <div class="bg-white w-full max-w-sm rounded-2xl p-4 shadow-2xl space-y-3">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-sm text-amber-900" id="optionsDishName">选择配菜与口味偏好</h3>
+                <h3 class="font-bold text-sm text-amber-900" id="optionsDishName" data-i18n="modal_options_title">选择配菜与口味偏好</h3>
                 <button onclick="closeOptionsModal()" class="text-gray-400 hover:text-gray-600 text-xs"><i class="fa-solid fa-xmark text-base"></i></button>
             </div>
             <div id="optionsListContainer" class="space-y-2 max-h-60 overflow-y-auto text-xs py-1"></div>
             <div class="flex space-x-2 pt-2">
-                <button onclick="closeOptionsModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold">取消</button>
-                <button id="optionsConfirmBtn" onclick="confirmAddWithOptions()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold">确认加入购物车</button>
+                <button onclick="closeOptionsModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-xl text-xs font-bold" data-i18n="btn_cancel">取消</button>
+                <button id="optionsConfirmBtn" onclick="confirmAddWithOptions()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-xl text-xs font-bold" data-i18n="btn_confirm">确认加入购物车</button>
             </div>
         </div>
     </div>
@@ -177,6 +177,7 @@
         let activeEditingOrderContext = null;
         let activeEditingCartKey = null;
 
+        // 全面丰富的菜品中英文对照表
         const dishTranslationMap = {
             "红烧肉": "Braised Pork Belly",
             "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
@@ -189,7 +190,29 @@
             "蛋炒饭": "Egg Fried Rice",
             "红烧排骨": "Braised Pork Ribs",
             "糖醋里脊": "Sweet and Sour Pork",
-            "地三鲜": "Stir-fried Potatoes, Eggplants and Peppers"
+            "地三鲜": "Stir-fried Potatoes, Eggplants & Peppers",
+            "可乐鸡翅": "Cola Chicken Wings",
+            "清炒时蔬": "Stir-fried Seasonal Vegetables",
+            "番茄牛腩": "Tomato & Beef Brisket Soup",
+            "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
+            "葱油拌面": "Scallion Oil Noodles"
+        };
+
+        // 配菜、原料及口味偏好对照表
+        const optionTranslationMap = {
+            "微辣": "Mild Spicy",
+            "中辣": "Medium Spicy",
+            "重辣": "Extra Spicy",
+            "不辣": "Not Spicy",
+            "多加葱": "Extra Scallion",
+            "不要葱": "No Scallion",
+            "加辣": "Add Chili",
+            "去香菜": "No Coriander",
+            "少油": "Less Oil",
+            "少盐": "Less Salt",
+            "不加配菜": "No Extra Sides",
+            "无": "None",
+            "不加": "None"
         };
 
         const categoryTranslationMap = {
@@ -202,8 +225,12 @@
 
         function translateDishName(name) {
             if (currentLang !== 'en') return name;
-            if (dishTranslationMap[name]) return dishTranslationMap[name];
-            return name;
+            return dishTranslationMap[name] || name;
+        }
+
+        function translateOptionName(opt) {
+            if (currentLang !== 'en') return opt;
+            return optionTranslationMap[opt] || opt;
         }
 
         function translateCategory(cat) {
@@ -236,6 +263,11 @@
                 btn_close: "关闭",
                 user_modal_title: "欢迎点菜！请先告诉我们你是谁",
                 btn_start_ordering: "开始点菜",
+                modal_options_title: "选择配菜与口味偏好",
+                btn_cancel: "取消",
+                btn_confirm: "确认加入购物车",
+                btn_order: "点单 ➕",
+                btn_select_side: "选配菜 ➕",
                 monday: "周一", tuesday: "周二", wednesday: "周三", thursday: "周四", friday: "周五", saturday: "周六", sunday: "周日",
                 status_pending: "待采购", status_purchased: "已采购", status_completed: "已完成"
             },
@@ -259,6 +291,11 @@
                 btn_close: "Close",
                 user_modal_title: "Welcome! Please tell us who you are",
                 btn_start_ordering: "Start Ordering",
+                modal_options_title: "Select Sides & Preferences",
+                btn_cancel: "Cancel",
+                btn_confirm: "Confirm & Add",
+                btn_order: "Order ➕",
+                btn_select_side: "Sides ➕",
                 monday: "Monday", tuesday: "Tuesday", wednesday: "Wednesday", thursday: "Thursday", friday: "Friday", saturday: "Saturday", sunday: "Sunday",
                 status_pending: "Pending", status_purchased: "Purchased", status_completed: "Completed"
             }
@@ -446,11 +483,11 @@
                         <div class="shrink-0 ml-2">
                             ${hasOptions ? `
                                 <button onclick="openOptionsModal(${dish.id})" class="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs">
-                                    选配菜 ➕
+                                    ${t('btn_select_side')}
                                 </button>
                             ` : `
                                 <button onclick="addSimpleDishToCart(${dish.id})" class="bg-amber-600 hover:bg-amber-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-xs">
-                                    点单 ➕
+                                    ${t('btn_order')}
                                 </button>
                             `}
                         </div>
@@ -461,18 +498,18 @@
 
         function handleOptionCheckboxChange(changedCheckbox) {
             let checkboxes = document.querySelectorAll('input[name="dishOption"]');
-            let isNoneOption = (changedCheckbox.value === '不加配菜' || changedCheckbox.value === '无' || changedCheckbox.value === '不加');
+            let isNoneOption = (changedCheckbox.value === '不加配菜' || changedCheckbox.value === '无' || changedCheckbox.value === '不加' || changedCheckbox.value === 'No Extra Sides' || changedCheckbox.value === 'None');
 
             if (isNoneOption && changedCheckbox.checked) {
                 checkboxes.forEach(cb => {
                     let val = cb.value;
-                    let isOtherNone = (val === '不加配菜' || val === '无' || val === '不加');
+                    let isOtherNone = (val === '不加配菜' || val === '无' || val === '不加' || val === 'No Extra Sides' || val === 'None');
                     if (!isOtherNone) cb.checked = false;
                 });
             } else if (!isNoneOption && changedCheckbox.checked) {
                 checkboxes.forEach(cb => {
                     let val = cb.value;
-                    let isNone = (val === '不加配菜' || val === '无' || val === '不加');
+                    let isNone = (val === '不加配菜' || val === '无' || val === '不加' || val === 'No Extra Sides' || val === 'None');
                     if (isNone) cb.checked = false;
                 });
             }
@@ -485,20 +522,21 @@
             activeEditingOrderContext = null;
             activeEditingCartKey = null;
 
-            document.getElementById('optionsDishName').innerText = `选择 ${translateDishName(dish.name)} 的配菜`;
+            document.getElementById('optionsDishName').innerText = (currentLang === 'zh' ? '选择 ' : 'Select sides for ') + translateDishName(dish.name);
             let container = document.getElementById('optionsListContainer');
             let options = dish.options || dish.subOptions || [];
 
             if (options.length === 0) {
-                container.innerHTML = `<div class="text-center py-4 text-gray-400 text-xs">该菜品暂无可选配菜</div>`;
+                container.innerHTML = `<div class="text-center py-4 text-gray-400 text-xs">${currentLang === 'zh' ? '该菜品暂无可选配菜' : 'No optional sides for this dish'}</div>`;
             } else {
                 container.innerHTML = options.map(opt => {
                     let optName = typeof opt === 'object' ? opt.name : opt;
+                    let displayOptName = translateOptionName(optName);
                     return `
                         <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                             <div class="flex items-center space-x-2">
                                 <input type="checkbox" name="dishOption" value="${optName}" onchange="handleOptionCheckboxChange(this)" class="w-4 h-4 text-amber-600 rounded">
-                                <span class="font-bold text-gray-800">${optName}</span>
+                                <span class="font-bold text-gray-800">${displayOptName}</span>
                             </div>
                         </label>
                     `;
@@ -517,19 +555,20 @@
             if (options.length === 0) return;
 
             activeEditingCartKey = cartKey;
-            document.getElementById('optionsDishName').innerText = `修改 ${translateDishName(dish.name)} 的配菜`;
+            document.getElementById('optionsDishName').innerText = (currentLang === 'zh' ? '修改 ' : 'Edit ') + translateDishName(dish.name);
 
             let container = document.getElementById('optionsListContainer');
             let currentSelected = item.selectedOptions || [];
 
             container.innerHTML = options.map(opt => {
                 let optName = typeof opt === 'object' ? opt.name : opt;
+                let displayOptName = translateOptionName(optName);
                 let isChecked = currentSelected.includes(optName) ? 'checked' : '';
                 return `
                     <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} onchange="handleOptionCheckboxChange(this)" class="w-4 h-4 text-amber-600 rounded">
-                            <span class="font-bold text-gray-800">${optName}</span>
+                            <span class="font-bold text-gray-800">${displayOptName}</span>
                         </div>
                     </label>
                 `;
@@ -570,7 +609,7 @@
             if (!dish) return;
 
             activeEditingOrderContext = { orderId, itemIndex };
-            document.getElementById('optionsDishName').innerText = `修改 ${translateDishName(dish.name)} 的配菜`;
+            document.getElementById('optionsDishName').innerText = (currentLang === 'zh' ? '修改 ' : 'Edit ') + translateDishName(dish.name);
 
             let container = document.getElementById('optionsListContainer');
             let options = dish.options || dish.subOptions || [];
@@ -578,12 +617,13 @@
 
             container.innerHTML = options.map(opt => {
                 let optName = typeof opt === 'object' ? opt.name : opt;
+                let displayOptName = translateOptionName(optName);
                 let isChecked = currentSelected.includes(optName) ? 'checked' : '';
                 return `
                     <label class="flex items-center justify-between p-2 rounded-xl bg-amber-50/50 border border-amber-100 cursor-pointer hover:bg-amber-100/50 transition">
                         <div class="flex items-center space-x-2">
                             <input type="checkbox" name="dishOption" value="${optName}" ${isChecked} onchange="handleOptionCheckboxChange(this)" class="w-4 h-4 text-amber-600 rounded">
-                            <span class="font-bold text-gray-800">${optName}</span>
+                            <span class="font-bold text-gray-800">${displayOptName}</span>
                         </div>
                     </label>
                 `;
@@ -611,7 +651,7 @@
 
             closeOptionsModal();
             renderMyOrdersList();
-            alert('配菜修改成功！');
+            alert(currentLang === 'zh' ? '配菜修改成功！' : 'Sides updated successfully!');
         }
 
         function closeOptionsModal() {
@@ -674,17 +714,19 @@
                 let item = cart[cartKey];
                 totalCount += item.count;
 
-                let subText = item.selectedOptions.length > 0 ? ` (${item.selectedOptions.join(', ')})` : '';
+                let translatedOpts = (item.selectedOptions || []).map(opt => translateOptionName(opt));
+                let subText = translatedOpts.length > 0 ? ` (${translatedOpts.join(', ')})` : '';
                 let dish = item.dish;
                 let hasOptions = dish && dish.options && dish.options.length > 0;
-                let editBtnHtml = hasOptions ? `<button onclick="openEditCartOptionsModal('${cartKey}')" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> 修改</button>` : '';
+                let editBtnHtml = hasOptions ? `<button onclick="openEditCartOptionsModal('${cartKey}')" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> ${currentLang === 'zh' ? '修改' : 'Edit'}</button>` : '';
+                let delBtnText = currentLang === 'zh' ? '删除' : 'Delete';
 
                 previewHtml += `
                     <div class="flex justify-between items-center truncate py-1 border-b border-gray-100">
                         <span class="truncate">${translateDishName(item.dish.name)}${subText} x1</span>
                         <div class="space-x-2 shrink-0 flex items-center">
                             ${editBtnHtml}
-                            <button onclick="removeCartItem('${cartKey}')" class="text-red-500 hover:text-red-700 text-[10px] font-bold"><i class="fa-solid fa-trash"></i> 删除</button>
+                            <button onclick="removeCartItem('${cartKey}')" class="text-red-500 hover:text-red-700 text-[10px] font-bold"><i class="fa-solid fa-trash"></i> ${delBtnText}</button>
                         </div>
                     </div>`;
             }
@@ -763,7 +805,8 @@
             daysOrder.forEach(day => {
                 let dayOrders = groupedByDay[day];
                 if (dayOrders.length > 0) {
-                    html += `<div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl space-y-2"><div class="flex justify-between items-center border-b border-amber-200 pb-1.5"><span class="font-bold text-xs text-amber-900">${t(getDayKeyMap(day))}</span><span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">${dayOrders.length} ${currentLang === 'zh' ? '单' : 'orders'}</span></div><div class="space-y-2">`;
+                    let ordersUnit = currentLang === 'zh' ? '单' : 'orders';
+                    html += `<div class="bg-amber-50/60 border border-amber-200 p-3 rounded-xl space-y-2"><div class="flex justify-between items-center border-b border-amber-200 pb-1.5"><span class="font-bold text-xs text-amber-900">${t(getDayKeyMap(day))}</span><span class="text-[10px] bg-amber-200 text-amber-800 px-2 py-0.5 rounded-full font-bold">${dayOrders.length} ${ordersUnit}</span></div><div class="space-y-2">`;
                     dayOrders.forEach(order => {
                         let statusText = order.status === '已完成' ? t('status_completed') : (order.status === '已采购' ? t('status_purchased') : t('status_pending'));
                         let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-800');
@@ -775,8 +818,9 @@
                                 </div>
                                 <div class="space-y-0.5 text-xs text-gray-700">
                                     ${order.items.map(i => {
-                                        let opts = i.selectedOptions ? i.selectedOptions.join(', ') : i.subOption;
-                                        let subText = opts ? ` (${opts})` : '';
+                                        let rawOpts = i.selectedOptions || (i.subOption ? i.subOption.split(', ') : []);
+                                        let translatedOpts = rawOpts.map(opt => translateOptionName(opt.trim())).filter(o => o);
+                                        let subText = translatedOpts.length > 0 ? ` (${translatedOpts.join(', ')})` : '';
                                         return `<div class="flex justify-between"><span>${translateDishName(i.name)}${subText} x1</span></div>`;
                                     }).join('')}
                                 </div>
@@ -804,6 +848,10 @@
             container.innerHTML = myOrders.map(order => {
                 let statusText = order.status === '已完成' ? t('status_completed') : (order.status === '已采购' ? t('status_purchased') : t('status_pending'));
                 let statusColor = order.status === '已完成' ? 'bg-blue-100 text-blue-700' : (order.status === '已采购' ? 'bg-green-100 text-green-700' : 'bg-amber-200 text-amber-800');
+                let editBtnText = currentLang === 'zh' ? '修改' : 'Edit';
+                let delItemText = currentLang === 'zh' ? '删除' : 'Delete';
+                let delOrderText = currentLang === 'zh' ? '删除整单' : 'Delete Order';
+
                 return `
                     <div class="bg-amber-50/50 border border-amber-200 p-3 rounded-xl space-y-1.5">
                         <div class="flex justify-between items-center border-b border-amber-100 pb-1">
@@ -812,19 +860,20 @@
                         </div>
                         <div class="space-y-1 text-xs text-gray-700">
                             ${order.items.map((i, index) => {
-                                let opts = i.selectedOptions ? i.selectedOptions.join(', ') : i.subOption;
-                                let subText = opts ? ` (${opts})` : '';
+                                let rawOpts = i.selectedOptions || (i.subOption ? i.subOption.split(', ') : []);
+                                let translatedOpts = rawOpts.map(opt => translateOptionName(opt.trim())).filter(o => o);
+                                let subText = translatedOpts.length > 0 ? ` (${translatedOpts.join(', ')})` : '';
 
                                 let dish = (cloudData.dishes || []).find(d => d.id === i.id);
                                 let hasOptions = dish && dish.options && dish.options.length > 0;
-                                let editBtnHtml = hasOptions ? `<button onclick="openEditOrderOptionsModal(${order.id},${index})" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> 修改</button>` : '';
+                                let editBtnHtml = hasOptions ? `<button onclick="openEditOrderOptionsModal(${order.id},${index})" class="text-amber-700 font-bold text-[11px]"><i class="fa-solid fa-pen"></i> ${editBtnText}</button>` : '';
 
                                 return `
                                     <div class="flex justify-between items-center bg-white p-2 rounded-lg border">
                                         <span>${translateDishName(i.name)}${subText} x1</span>
                                         <div class="space-x-2">
                                             ${editBtnHtml}
-                                            <button onclick="deleteMyOrderItem(${order.id},${index})" class="text-red-600 font-bold text-[11px]"><i class="fa-solid fa-trash"></i> 删除</button>
+                                            <button onclick="deleteMyOrderItem(${order.id},${index})" class="text-red-600 font-bold text-[11px]"><i class="fa-solid fa-trash"></i> ${delItemText}</button>
                                         </div>
                                     </div>
                                 `;
@@ -832,7 +881,7 @@
                         </div>
                         <div class="flex justify-between items-center pt-1 border-t border-amber-100 text-[10px]">
                             <span class="text-gray-400">${order.time || ''}</span>
-                            <button onclick="deleteMyOrder(${order.id})" class="text-red-500 font-bold">删除整单</button>
+                            <button onclick="deleteMyOrder(${order.id})" class="text-red-500 font-bold">${delOrderText}</button>
                         </div>
                     </div>
                 `;
@@ -840,7 +889,8 @@
         }
 
         async function deleteMyOrder(orderId) {
-            if (!confirm('确定要删除整条预定单吗？')) return;
+            let msg = currentLang === 'zh' ? '确定要删除整条预定单吗？' : 'Are you sure to delete this entire order?';
+            if (!confirm(msg)) return;
             await fetchAllData();
             cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
             await saveAllData();
@@ -848,7 +898,8 @@
         }
 
         async function deleteMyOrderItem(orderId, itemIndex) {
-            if (!confirm('确定要从订单中删除该菜品吗？')) return;
+            let msg = currentLang === 'zh' ? '确定要从订单中删除该菜品吗？' : 'Are you sure to remove this item?';
+            if (!confirm(msg)) return;
             await fetchAllData();
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (order) {
