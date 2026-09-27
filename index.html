@@ -176,16 +176,38 @@
         let activeEditingOrderContext = null;
         let activeEditingCartKey = null;
 
-        // 核心翻译引擎：字典 + 智能匹配 + 自动翻译兜底
-        const dishTranslationMap = {
-            "红烧肉": "Braised Pork Belly", "西红柿": "Tomato", "炒蛋": "Scrambled Eggs", "鸡蛋": "Eggs",
-            "宫保鸡丁": "Kung Pao Chicken", "麻婆豆腐": "Mapo Tofu", "水煮肉片": "Boiled Pork Slices",
-            "清蒸鱼": "Steamed Fish", "拍黄瓜": "Smashed Cucumbers", "酸辣汤": "Hot and Sour Soup",
-            "蛋炒饭": "Egg Fried Rice", "红烧排骨": "Braised Pork Ribs", "糖醋里脊": "Sweet and Sour Pork",
-            "地三鲜": "Stir-fried Potatoes, Eggplants & Peppers", "可乐鸡翅": "Cola Chicken Wings",
-            "清炒时蔬": "Seasonal Vegetables", "番茄牛腩": "Tomato Beef Brisket", "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
-            "葱油拌面": "Scallion Oil Noodles", "牛肉": "Beef", "猪肉": "Pork", "鸡肉": "Chicken", "排骨": "Pork Ribs",
-            "炒": "Stir-fried", "汤": "Soup", "面": "Noodles", "饭": "Rice", "鱼": "Fish", "虾": "Shrimp"
+        // 全面覆盖的食材、烹饪方式及常见家常菜中英文词库
+        const translationDictionary = {
+            // 常见食材 (包含土豆、番茄等基础词)
+            "土豆": "Potato", "番茄": "Tomato", "西红柿": "Tomato", "鸡蛋": "Egg", "肉": "Pork",
+            "牛肉": "Beef", "鸡": "Chicken", "鱼": "Fish", "虾": "Shrimp", "排骨": "Pork Ribs",
+            "黄瓜": "Cucumber", "豆腐": "Tofu", "茄子": "Eggplant", "辣椒": "Pepper", "青菜": "Green Veggie",
+            "白菜": "Chinese Cabbage", "面": "Noodles", "饭": "Rice", "汤": "Soup", "粥": "Congee",
+            "葱": "Scallion", "蒜": "Garlic", "姜": "Ginger", "香菜": "Coriander",
+
+            // 烹饪与修饰词
+            "红烧": "Braised", "清蒸": "Steamed", "水煮": "Boiled", "爆炒": "Stir-fried", "炒": "Stir-fried",
+            "糖醋": "Sweet & Sour", "椒盐": "Salt & Pepper", "凉拌": "Cold Tossed", "炸": "Fried",
+
+            // 完整高频菜名精准对照
+            "红烧肉": "Braised Pork Belly",
+            "西红柿炒鸡蛋": "Scrambled Eggs with Tomato",
+            "番茄炒蛋": "Scrambled Eggs with Tomato",
+            "宫保鸡丁": "Kung Pao Chicken",
+            "麻婆豆腐": "Mapo Tofu",
+            "水煮肉片": "Boiled Pork Slices",
+            "清蒸鱼": "Steamed Fish",
+            "拍黄瓜": "Smashed Cucumbers",
+            "酸辣汤": "Hot and Sour Soup",
+            "蛋炒饭": "Egg Fried Rice",
+            "红烧排骨": "Braised Pork Ribs",
+            "糖醋里脊": "Sweet and Sour Pork",
+            "地三鲜": "Stir-fried Potatoes, Eggplants & Peppers",
+            "可乐鸡翅": "Cola Chicken Wings",
+            "清炒时蔬": "Stir-fried Seasonal Vegetables",
+            "番茄牛腩": "Tomato & Beef Brisket Soup",
+            "皮蛋瘦肉粥": "Pork & Preserved Egg Congee",
+            "葱油拌面": "Scallion Oil Noodles"
         };
 
         const optionTranslationMap = {
@@ -202,18 +224,14 @@
         function translateDishName(name) {
             if (currentLang !== 'en') return name;
             if (!name) return '';
-            if (dishTranslationMap[name]) return dishTranslationMap[name];
+            if (translationDictionary[name]) return translationDictionary[name];
 
-            // 组合替换：如果名字中包含某些词，进行拼接翻译
+            // 逐字/逐词组合翻译：按字典替换所有匹配的中文食材或烹饪词
             let translated = name;
-            for (let zh in dishTranslationMap) {
+            for (let zh in translationDictionary) {
                 if (translated.includes(zh)) {
-                    translated = translated.replace(zh, dishTranslationMap[zh]);
+                    translated = translated.replaceAll(zh, translationDictionary[zh]);
                 }
-            }
-            // 如果替换后依然含有中文字符（说明有未收录的自定义菜名），自动转换为 Dish (自定义名) 提示
-            if (/[\u4e00-\u9fa5]/.test(translated)) {
-                return name + " (Dish)";
             }
             return translated;
         }
@@ -225,10 +243,10 @@
             let translated = opt;
             for (let zh in optionTranslationMap) {
                 if (translated.includes(zh)) {
-                    translated = translated.replace(zh, optionTranslationMap[zh]);
+                    translated = translated.replaceAll(zh, optionTranslationMap[zh]);
                 }
             }
-            return /[\u4e00-\u9fa5]/.test(translated) ? opt : translated;
+            return translated;
         }
 
         function translateCategory(cat) {
