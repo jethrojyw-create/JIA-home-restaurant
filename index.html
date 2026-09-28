@@ -219,15 +219,11 @@
         async function onlineTranslate(text, type = 'dish', originalKey = '') {
             if (!text || currentLang === 'zh') return text;
 
-            // 1. 检查云端/本地持久化翻译映射表
-            if (type === 'dish') {
-                if (cloudData.dishTranslations && cloudData.dishTranslations[originalKey || text]) {
-                    return cloudData.dishTranslations[originalKey || text];
-                }
-            } else if (type === 'option') {
-                if (cloudData.optionTranslations && cloudData.optionTranslations[originalKey || text]) {
-                    return cloudData.optionTranslations[originalKey || text];
-                }
+            if (type === 'dish' && cloudData.dishTranslations && cloudData.dishTranslations[originalKey || text]) {
+                return cloudData.dishTranslations[originalKey || text];
+            }
+            if (type === 'option' && cloudData.optionTranslations && cloudData.optionTranslations[originalKey || text]) {
+                return cloudData.optionTranslations[originalKey || text];
             }
 
             if (professionalDishDict[text]) return professionalDishDict[text];
@@ -243,7 +239,6 @@
                     translationCache[text] = capitalized;
                     localStorage.setItem('family_order_trans_cache', JSON.stringify(translationCache));
 
-                    // 自动存入云端翻译字典并异步保存
                     if (type === 'dish') {
                         if (!cloudData.dishTranslations) cloudData.dishTranslations = {};
                         cloudData.dishTranslations[originalKey || text] = capitalized;
@@ -407,14 +402,18 @@
             } catch (e) { alert('云端同步失败！'); }
         }
 
+        // 🌟 后台异步静默同步，避免阻塞UI交互造成卡顿
         async function saveAllDataSilently() {
             try {
-                await fetch(API_URL, {
+                if (cloudData.dishes && cloudData.dishes.length > 0) {
+                    localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
+                }
+                fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(cloudData)
-                });
-            } catch (e) { console.log('Silent sync error', e); }
+                }).catch(err => console.log('Silent sync error:', err));
+            } catch (e) { console.log(e); }
         }
 
         window.onload = async function() {
@@ -429,7 +428,7 @@
                 openUserModal();
             }
             await fetchAllData();
-            setInterval(fetchAllData, 8000);
+            setInterval(fetchAllData, 10000); // 调整轮询间隔为10秒，减少高频拥堵
         }
 
         function openUserModal() {
@@ -692,6 +691,7 @@
             document.getElementById('optionsModal').classList.remove('hidden');
         }
 
+        // ⚡ 优化：本地内存立即更新并异步后台同步，实现毫秒级响应
         async function confirmEditOrderOptions() {
             if (!activeEditingOrderContext) return;
             let checkboxes = document.querySelectorAll('input[name="dishOption"]:checked');
@@ -700,12 +700,11 @@
             selectedOptions.sort();
 
             let { orderId, itemIndex } = activeEditingOrderContext;
-            await fetchAllData();
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (order && order.items[itemIndex]) {
                 order.items[itemIndex].selectedOptions = selectedOptions;
                 order.items[itemIndex].subOption = selectedOptions.join(', ');
-                await saveAllData();
+                saveAllDataSilently();
             }
 
             closeOptionsModal();
@@ -809,13 +808,13 @@
             updateCartBar();
         }
 
+        // ⚡ 优化：提交订单采用乐观更新，本地加入后立刻清空购物车并异步静默上传
         async function submitOrder() {
             if (!currentUser) return openUserModal();
             let keys = Object.keys(cart);
             if (keys.length === 0) return;
 
             let items = [];
-
             for (let k in keys) {
                 let key = keys[k];
                 let item = cart[key];
@@ -837,18 +836,18 @@
                 time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
 
-            await fetchAllData();
             if (!cloudData.orders) cloudData.orders = [];
             cloudData.orders.unshift(newOrder);
-            await saveAllData();
 
             cart = {};
             updateCartBar();
             await renderDishes();
+
+            // 异步静默同步，避免阻塞
+            saveAllDataSilently();
             alert((currentLang === 'zh' ? '成功为【' : 'Successfully booked for ') + t(getDayKeyMap(selectedDay)) + (currentLang === 'zh' ? '】提交订单！' : '!'));
         }
 
-        // 👨‍🍳 打开大厨备菜与切洗指引面板
         async function openChefPrepModal() {
             document.getElementById('chefPrepModal').classList.remove('hidden');
             document.getElementById('chefPrepDayDisplay').innerText = (currentLang === 'zh' ? '当前查看: ' : 'Current: ') + t(getDayKeyMap(selectedDay)) + ` (${selectedDay})`;
@@ -868,7 +867,6 @@
             let dishesMap = {};
             (cloudData.dishes || []).forEach(d => { dishesMap[d.id] = d; });
 
-            // 汇总当天所有菜品及切洗原材料
             let dishSummary = {};
             let ingredientPrepList = {};
 
@@ -880,7 +878,6 @@
                     if (!dishSummary[dishName]) dishSummary[dishName] = 0;
                     dishSummary[dishName] += (item.count || 1);
 
-                    // 收集主料与配菜原材料
                     if (dish && dish.ingredients) {
                         let parts = dish.ingredients.split(/[,，;；]/);
                         parts.forEach(p => {
@@ -892,7 +889,6 @@
                         });
                     }
 
-                    // 收集所选配菜的原材料
                     if (item.selectedOptions && item.selectedOptions.length > 0 && dish && dish.options) {
                         item.selectedOptions.forEach(optName => {
                             let foundOpt = dish.options.find(o => o.name === optName);
@@ -1079,27 +1075,29 @@
             container.innerHTML = html;
         }
 
+        // ⚡ 优化：删除整单采用乐观更新，本地删除后即刻刷新列表并异步同步
         async function deleteMyOrder(orderId) {
             let msg = currentLang === 'zh' ? '确定要删除整条预定单吗？' : 'Are you sure to delete this entire order?';
             if (!confirm(msg)) return;
-            await fetchAllData();
+
             cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
-            await saveAllData();
             await renderMyOrdersList();
+            saveAllDataSilently();
         }
 
+        // ⚡ 优化：删除单项采用乐观更新
         async function deleteMyOrderItem(orderId, itemIndex) {
             let msg = currentLang === 'zh' ? '确定要从订单中删除该菜品吗？' : 'Are you sure to remove this item?';
             if (!confirm(msg)) return;
-            await fetchAllData();
+
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (order) {
                 order.items.splice(itemIndex, 1);
                 if (order.items.length === 0) {
                     cloudData.orders = cloudData.orders.filter(o => o.id !== orderId);
                 }
-                await saveAllData();
                 await renderMyOrdersList();
+                saveAllDataSilently();
             }
         }
     </script>
