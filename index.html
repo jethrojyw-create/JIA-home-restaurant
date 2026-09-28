@@ -83,7 +83,44 @@
     </div>
 
     <!-- 主体内容区 -->
-    <main class="w-full max-w-lg mx-auto p-3 space-y-2">
+    <main class="w-full max-w-lg mx-auto p-3 space-y-3">
+
+        <!-- 🌟 新增功能模块：今日大厨备菜与切洗台（与手机日期自动匹配） -->
+        <div class="bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-2xl p-3.5 shadow-md space-y-2.5">
+            <div class="flex justify-between items-center border-b border-amber-400/40 pb-2">
+                <div class="flex items-center space-x-1.5">
+                    <span class="text-base">👨‍🍳</span>
+                    <div>
+                        <h3 class="font-bold text-xs" id="chefWidgetTitle">今日大厨备菜台 (匹配手机日期)</h3>
+                        <p class="text-[10px] text-amber-100" id="chefWidgetDateSubtitle">正在加载当天日期...</p>
+                    </div>
+                </div>
+                <span id="todayMatchBadge" class="bg-white/20 text-white text-[10px] px-2 py-0.5 rounded-full font-bold backdrop-blur">自动匹配中</span>
+            </div>
+
+            <!-- 当天菜单展示 -->
+            <div class="space-y-1">
+                <p class="text-[11px] font-bold text-amber-100 flex items-center justify-between">
+                    <span><i class="fa-solid fa-utensils mr-1"></i>今日已点菜单：</span>
+                    <span id="todayOrdersCountText" class="text-[10px] bg-amber-800/50 px-1.5 py-0.2 rounded">0 份菜品</span>
+                </p>
+                <div id="chefTodayMenuList" class="bg-amber-800/30 rounded-xl p-2 text-xs space-y-1 max-h-28 overflow-y-auto no-scrollbar">
+                    <div class="text-amber-200 text-center py-2 text-[11px]">今天还没有人点菜哦~</div>
+                </div>
+            </div>
+
+            <!-- 需要准备切洗的食材 -->
+            <div class="space-y-1 pt-1 border-t border-amber-400/40">
+                <p class="text-[11px] font-bold text-amber-100 flex items-center">
+                    <i class="fa-solid fa-kitchen-set mr-1"></i>下班直接烧！需提前切洗准备的食材清单：
+                </p>
+                <div id="chefPrePrepList" class="bg-white/10 rounded-xl p-2 text-xs space-y-1 max-h-32 overflow-y-auto">
+                    <div class="text-amber-200 text-center py-2 text-[11px]">暂无切洗食材需求</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 菜品列表 -->
         <div id="dishListContainer" class="grid grid-cols-1 gap-2">
             <div class="text-center py-12 text-gray-400 text-xs bg-white rounded-2xl border" data-i18n="loading_dishes">正在加载云端菜单库...</div>
         </div>
@@ -178,10 +215,8 @@
 
         let currentLang = localStorage.getItem('family_order_lang') || 'zh';
 
-        // 🧠 本地存储的翻译缓存池（持久化于 localStorage）
         let translationCache = JSON.parse(localStorage.getItem('family_order_trans_cache') || '{}');
 
-        // 🌟 中国特色经典菜名/原料专业标准译法对照表（避免生硬直译）
         const professionalDishDict = {
             "大排面": "Noodles with Fried Spare Ribs",
             "上海大排面": "Shanghai Pork Chop Noodles",
@@ -198,7 +233,6 @@
             "牛肉面": "Beef Noodle Soup",
             "酸辣汤": "Hot and Sour Soup",
             "蛋炒饭": "Egg Fried Rice",
-            // 原料或配菜偏好选项专业规范
             "微辣": "Mild Spicy",
             "中辣": "Medium Spicy",
             "特辣": "Extra Spicy",
@@ -211,7 +245,6 @@
             "加面": "Extra Noodles"
         };
 
-        // 🔠 英文首字母大写格式化函数
         function capitalizeWords(str) {
             if (!str) return '';
             return str.replace(/\b\w/g, l => l.toUpperCase());
@@ -219,13 +252,9 @@
 
         async function onlineTranslate(text) {
             if (!text || currentLang === 'zh') return text;
-
-            // 1. 优先匹配专业对照表
             if (professionalDishDict[text]) {
                 return professionalDishDict[text];
             }
-
-            // 2. 检查缓存
             if (translationCache[text]) return capitalizeWords(translationCache[text]);
 
             try {
@@ -236,7 +265,6 @@
                     let translated = json[0].map(item => item[0]).join('');
                     let capitalized = capitalizeWords(translated);
                     translationCache[text] = capitalized;
-                    // 实时同步保存到本地缓存
                     localStorage.setItem('family_order_trans_cache', JSON.stringify(translationCache));
                     return capitalized;
                 }
@@ -321,6 +349,7 @@
             updateUIStrings();
             await renderDishes();
             await updateCartBar();
+            renderChefTodayWidget();
             if(!document.getElementById('myOrdersModal').classList.contains('hidden')) await renderMyOrdersList();
             if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) await renderFamilyOrdersList();
         }
@@ -337,11 +366,33 @@
             });
             document.getElementById('selectedDayBadge').innerText = t(getDayKeyMap(selectedDay));
             document.getElementById('searchInput').placeholder = currentLang === 'zh' ? '搜索想吃的菜品...' : 'Search dishes...';
+
+            // 更新新增大厨模块文字
+            document.getElementById('chefWidgetTitle').innerText = currentLang === 'zh' ? '今日大厨备菜台 (匹配手机日期)' : 'Chef Prep Widget (Synced)';
         }
 
         function getDayKeyMap(day) {
             const map = { '周一': 'monday', '周二': 'tuesday', '周三': 'wednesday', '周四': 'thursday', '周五': 'friday', '周六': 'saturday', '周日': 'sunday' };
             return map[day] || 'monday';
+        }
+
+        // 🌟 自动匹配手机当前日期，并初始化选中当天
+        function initDeviceDateMatching() {
+            const daysMap = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+            const now = new Date();
+            const todayDayStr = daysMap[now.getDay()];
+
+            // 格式化输出手机日期（如：2026年6月7日 星期日）
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const date = now.getDate();
+            const dateDisplayStr = `${year}年${month}月${date}日 (${todayDayStr})`;
+
+            document.getElementById('chefWidgetDateSubtitle').innerText = dateDisplayStr;
+            document.getElementById('todayMatchBadge').innerText = `手机匹配: ${todayDayStr}`;
+
+            // 自动默认选中今天对应的星期
+            selectDay(todayDayStr);
         }
 
         async function fetchAllData() {
@@ -367,6 +418,7 @@
 
             await renderDishes();
             await updateCartBar();
+            renderChefTodayWidget();
             if(!document.getElementById('myOrdersModal').classList.contains('hidden')) await renderMyOrdersList();
             if(!document.getElementById('familyOrdersModal').classList.contains('hidden')) await renderFamilyOrdersList();
         }
@@ -395,6 +447,10 @@
             } else {
                 openUserModal();
             }
+
+            // 匹配手机日期并默认选中今天
+            initDeviceDateMatching();
+
             await fetchAllData();
             setInterval(fetchAllData, 8000);
         }
@@ -421,6 +477,128 @@
                 btn.className = btn.getAttribute('data-day') === day ? "day-btn px-3 py-1 rounded-xl text-xs font-bold bg-amber-600 text-white whitespace-nowrap shadow transition" : "day-btn px-3 py-1 rounded-xl text-xs font-bold bg-white text-gray-600 border whitespace-nowrap transition";
             });
             await renderDishes();
+            renderChefTodayWidget(); // 切换日期时，备菜台联动更新
+        }
+
+        // 🌟 核心新增：渲染今日大厨备菜与切洗食材清单
+        async function renderChefTodayWidget() {
+            const menuContainer = document.getElementById('chefTodayMenuList');
+            const prepContainer = document.getElementById('chefPrePrepList');
+            const countText = document.getElementById('todayOrdersCountText');
+
+            // 根据当前手机匹配并选中的星期筛选订单
+            const orders = (cloudData.orders || []).filter(o => o.targetDay === selectedDay);
+            const dishesMap = {};
+            (cloudData.dishes || []).forEach(d => { dishesMap[d.id] = d; });
+
+            if (orders.length === 0) {
+                countText.innerText = `0 份菜品`;
+                menuContainer.innerHTML = `<div class="text-amber-200 text-center py-2 text-[11px]">${selectedDay} 还没有人点单哦~</div>`;
+                prepContainer.innerHTML = `<div class="text-amber-200 text-center py-2 text-[11px]">暂无切洗食材需求</div>`;
+                return;
+            }
+
+            // 统计菜品及总份数
+            let dishSummary = {};
+            let totalDishesCount = 0;
+            let ingredientSummary = {}; // 用于汇总需要切洗的食材
+
+            orders.forEach(order => {
+                if (!order.items) return;
+                order.items.forEach(item => {
+                    let times = item.count || 1;
+                    totalDishesCount += times;
+
+                    // 汇总菜品名称
+                    if (!dishSummary[item.name]) {
+                        dishSummary[item.name] = { count: 0, users: new Set() };
+                    }
+                    dishSummary[item.name].count += times;
+                    if (order.user) dishSummary[item.name].users.add(order.user);
+
+                    // 提取并解析该菜品对应的原材料与配菜，以便列出切洗清单
+                    let dish = dishesMap[item.id];
+                    if (dish) {
+                        // 解析主料
+                        if (dish.ingredients) {
+                            parseAndAddIngredients(dish.ingredients, times, ingredientSummary);
+                        }
+                        // 解析配菜选项中的原料
+                        if (item.selectedOptions && item.selectedOptions.length > 0 && dish.options) {
+                            item.selectedOptions.forEach(optName => {
+                                let foundOpt = dish.options.find(o => o.name === optName);
+                                if (foundOpt && foundOpt.ingredients) {
+                                    parseAndAddIngredients(foundOpt.ingredients, times, ingredientSummary);
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+
+            countText.innerText = `${totalDishesCount} 份菜品 (${orders.length} 单)`;
+
+            // 渲染今日菜单列表
+            let menuHtml = '';
+            for (let name in dishSummary) {
+                let info = dishSummary[name];
+                let userStr = Array.from(info.users).join(', ');
+                let translatedName = await translateDishName(name);
+                menuHtml += `
+                    <div class="flex justify-between items-center bg-amber-900/40 px-2 py-1 rounded-lg">
+                        <span class="font-bold text-white">${translatedName} <span class="text-[10px] text-amber-200 font-normal">(点单人: ${userStr})</span></span>
+                        <span class="bg-amber-600 text-white font-bold px-1.5 py-0.2 rounded text-[10px]">x${info.count}</span>
+                    </div>
+                `;
+            }
+            menuContainer.innerHTML = menuHtml;
+
+            // 渲染切洗食材列表
+            let prepKeys = Object.keys(ingredientSummary);
+            if (prepKeys.length === 0) {
+                prepContainer.innerHTML = `<div class="text-amber-200 text-center py-2 text-[11px]">该日菜单暂无明细原料记录</div>`;
+                return;
+            }
+
+            let prepHtml = '';
+            for (let k of prepKeys) {
+                let ing = ingredientSummary[k];
+                let displayVal = Number.isInteger(ing.total) ? ing.total : ing.total.toFixed(1);
+                prepHtml += `
+                    <div class="flex justify-between items-center bg-black/15 px-2 py-1 rounded-lg text-[11px]">
+                        <span class="text-white font-bold flex items-center"><i class="fa-solid fa-check text-amber-300 mr-1 text-[10px]"></i>${ing.name}</span>
+                        <span class="bg-amber-500 text-white font-bold px-1.5 py-0.5 rounded text-[10px]">需准备: ${displayVal}${ing.unit || '份'}</span>
+                    </div>
+                `;
+            }
+            prepContainer.innerHTML = prepHtml;
+        }
+
+        // 辅助解析原料字符串工具函数
+        function parseAndAddIngredients(ingredientsStr, times, summaryObj) {
+            if (!ingredientsStr) return;
+            let rawParts = ingredientsStr.split(/[,，;；]/);
+            rawParts.forEach(part => {
+                part = part.trim();
+                if (!part) return;
+                let match = part.match(/^([\u4e00-\u9fa5\w\s\(\)]+?)\s*([\d\.]+)\s*([a-zA-Z\u4e00-\u9fa5]+)?$/);
+                if (match) {
+                    let ingName = match[1].trim();
+                    let val = parseFloat(match[2]);
+                    let unit = match[3] ? match[3].trim() : '';
+                    let key = `${ingName}_${unit}`;
+                    if (!summaryObj[key]) {
+                        summaryObj[key] = { name: ingName, unit: unit, total: 0 };
+                    }
+                    summaryObj[key].total += val * times;
+                } else {
+                    let key = `${part}_`;
+                    if (!summaryObj[key]) {
+                        summaryObj[key] = { name: part, unit: '', total: 0 };
+                    }
+                    summaryObj[key].total += times;
+                }
+            });
         }
 
         async function filterCategory(cat) {
@@ -677,6 +855,7 @@
 
             closeOptionsModal();
             await renderMyOrdersList();
+            renderChefTodayWidget();
             alert(currentLang === 'zh' ? '配菜修改成功！' : 'Sides updated successfully!');
         }
 
@@ -812,6 +991,7 @@
             cart = {};
             updateCartBar();
             await renderDishes();
+            renderChefTodayWidget();
             alert((currentLang === 'zh' ? '成功为【' : 'Successfully booked for ') + t(getDayKeyMap(selectedDay)) + (currentLang === 'zh' ? '】提交订单！' : '!'));
         }
 
@@ -943,6 +1123,7 @@
             cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
             await saveAllData();
             await renderMyOrdersList();
+            renderChefTodayWidget();
         }
 
         async function deleteMyOrderItem(orderId, itemIndex) {
@@ -957,6 +1138,7 @@
                 }
                 await saveAllData();
                 await renderMyOrdersList();
+                renderChefTodayWidget();
             }
         }
     </script>
