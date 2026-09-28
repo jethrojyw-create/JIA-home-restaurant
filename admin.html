@@ -333,10 +333,24 @@
             }
         }
 
+        // 🌟 后台异步静默保存
+        async function saveAllDataSilently() {
+            try {
+                if (cloudData.dishes && cloudData.dishes.length > 0) {
+                    localStorage.setItem('family_dishes_only_backup', JSON.stringify(cloudData.dishes));
+                }
+                fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cloudData)
+                }).catch(err => console.log('Admin silent sync error:', err));
+            } catch (e) { console.log(e); }
+        }
+
         window.onload = function() {
             initDeviceDateSelection();
             fetchAllData();
-            setInterval(fetchAllData, 8000);
+            setInterval(fetchAllData, 12000);
         }
 
         function initDeviceDateSelection() {
@@ -413,18 +427,18 @@
             });
 
             if (statusChanged) {
-                saveAllData();
+                saveAllDataSilently();
             }
         }
 
+        // ⚡ 优化：订单状态切换采用本地立刻更新并后台同步
         async function cycleOrderStatus(orderId) {
-            await fetchAllData();
             let order = (cloudData.orders || []).find(o => o.id === orderId);
             if (order) {
                 if (!order.status || order.status === '待采购') order.status = '已采购';
                 else order.status = '待采购';
-                await saveAllData();
                 renderAll();
+                saveAllDataSilently();
             }
         }
 
@@ -568,7 +582,6 @@
             }).join('');
         }
 
-        // 手动添加或删除/修改清单原材料的相关函数
         function openAddManualShoppingItem() {
             document.getElementById('manualModalTitle').innerText = '手动添加采购原材料';
             document.getElementById('editManualKey').value = '';
@@ -591,7 +604,6 @@
                 document.getElementById('manualUnitInput').value = item.unit || '';
                 document.getElementById('manualItemModal').classList.remove('hidden');
             } else {
-                // 如果是自动生成的原材料，可以通过 override 机制调整数量或名称
                 let rawList = getRawAggregatedIngredients();
                 let item = rawList.find(i => i.key === key);
                 if (!item) return;
@@ -609,6 +621,7 @@
             document.getElementById('manualItemModal').classList.add('hidden');
         }
 
+        // ⚡ 优化：保存手动项采用本地实时更新并后台静默同步
         async function saveManualItem() {
             let key = document.getElementById('editManualKey').value;
             let itemType = document.getElementById('editItemType').value;
@@ -620,8 +633,6 @@
                 alert('请填写完整的名称和有效数量！');
                 return;
             }
-
-            await fetchAllData();
 
             if (itemType === 'manual') {
                 if (!cloudData.manualIngredients) cloudData.manualIngredients = [];
@@ -640,14 +651,14 @@
             }
 
             updateOrdersStatusAutomatically();
-            await saveAllData();
             closeManualModal();
             renderAll();
+            saveAllDataSilently();
         }
 
+        // ⚡ 优化：删除采购项采用本地实时更新并后台同步
         async function deleteShoppingItem(key, isManual) {
             if (!confirm('确定要从采购清单中移除该项吗？')) return;
-            await fetchAllData();
 
             if (isManual) {
                 cloudData.manualIngredients = (cloudData.manualIngredients || []).filter(m => m.key !== key);
@@ -657,8 +668,8 @@
             }
 
             updateOrdersStatusAutomatically();
-            await saveAllData();
             renderAll();
+            saveAllDataSilently();
         }
 
         function renderTodaySummary() {
@@ -707,7 +718,6 @@
             const selectedDay = document.getElementById('selectedDaySelect').value;
             if (!confirm(`确定要结算并【清空】【${selectedDay}】的所有订单吗？\n\n注意：此操作将自动扣除库存，并彻底删除当天订单以便接受新的点菜！`)) return;
 
-            await fetchAllData();
             let orders = cloudData.orders || [];
             let inventory = cloudData.inventory || {};
             let dishesMap = {};
@@ -763,8 +773,8 @@
             cloudData.orders = orders.filter(o => o.targetDay !== selectedDay);
 
             updateOrdersStatusAutomatically();
-            await saveAllData();
             renderAll();
+            saveAllDataSilently();
             alert(`【${selectedDay}】订单已成功清空，库存已完成扣除！`);
         }
 
@@ -835,27 +845,24 @@
                 return;
             }
 
-            await fetchAllData();
             if (!cloudData.inventory) cloudData.inventory = {};
-
             let targetKey = key ? key : `auto_${name}_${unit}`;
             cloudData.inventory[targetKey] = { name: name, total: total, unit: unit };
 
             updateOrdersStatusAutomatically();
-            await saveAllData();
             closeInventoryModal();
             renderAll();
+            saveAllDataSilently();
         }
 
         async function deleteInventoryItem(key) {
             if (!confirm('确定要删除该库存项吗？')) return;
-            await fetchAllData();
             if (cloudData.inventory && cloudData.inventory[key]) {
                 delete cloudData.inventory[key];
             }
             updateOrdersStatusAutomatically();
-            await saveAllData();
             renderAll();
+            saveAllDataSilently();
         }
 
         function renderOrders() {
@@ -926,10 +933,9 @@
 
         async function deleteAdminOrder(orderId) {
             if (!confirm('确定要删除该笔家庭订单吗？')) return;
-            await fetchAllData();
             cloudData.orders = (cloudData.orders || []).filter(o => o.id !== orderId);
-            await saveAllData();
             renderAll();
+            saveAllDataSilently();
         }
 
         function renderDishesAdmin() {
@@ -1041,7 +1047,6 @@
                 });
             }
 
-            await fetchAllData();
             if (!cloudData.dishes) cloudData.dishes = [];
 
             if (id) {
@@ -1068,17 +1073,16 @@
                 });
             }
 
-            await saveAllData();
             closeDishModal();
             renderAll();
+            saveAllDataSilently();
         }
 
         async function deleteDish(dishId) {
             if (!confirm('确定要从菜单库删除这个菜品吗？')) return;
-            await fetchAllData();
             cloudData.dishes = (cloudData.dishes || []).filter(d => d.id !== dishId);
-            await saveAllData();
             renderAll();
+            saveAllDataSilently();
         }
 
         function openSupermarketMode() {
@@ -1087,8 +1091,8 @@
         }
         async function closeSupermarketMode() {
             document.getElementById('supermarketModal').classList.add('hidden');
-            await saveAllData();
             renderAll();
+            saveAllDataSilently();
         }
 
         function renderSupermarketList() {
@@ -1138,7 +1142,7 @@
 
             updateOrdersStatusAutomatically();
             renderSupermarketList();
-            await saveAllData();
+            saveAllDataSilently();
         }
     </script>
 </body>
